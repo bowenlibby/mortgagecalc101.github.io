@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mortgage Calculator</title>
+    <style>
+        :root {
+            --navy:     #0d1f38;
+            --navy2:    #172d50;
+            --blue:     #1a5fb4;
+            --blue-lt:  #2e7dd4;
+            --amber:    #d97f28;
+            --green:    #2a7d4a;
+            --red:      #c03a3a;
+            --purple:   #6640c0;
+            --teal:     #0a8599;
+            --slate:    #5a6578;
+            --bg:       #f0e9e0;
+            --surface:  #ffffff;
+            --border:   #d8cfc4;
+            --text:     #1a1a2e;
+            --muted:    #6b7280;
+            --card-shadow: 0 2px 14px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── HEADER ─────────────────────────────────────────────── */
+        header {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        .hero {
+            max-width: 1260px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 0;
+            display: grid;
+            grid-template-columns: 1fr 520px;
+            align-items: end;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .hero { grid-template-columns: 1fr; padding-bottom: 1.5rem; }
+            .hero-art { display: none; }
+        }
+
+        .hero-text { padding-bottom: 2.5rem; /* overridden at ≤900px and ≤640px */ }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.9);
+            padding: 0.3rem 0.875rem;
+            border-radius: 99px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            margin-bottom: 1rem;
+        }
+
+        .hero-text h1 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            color: #fff;
+        }
+
+        .hero-text h1 span { color: #7eb8f5; }
+
+        .hero-text p {
+            margin-top: 0.875rem;
+            font-size: 1rem;
+            color: rgba(255,255,255,0.65);
+            line-height: 1.6;
+            max-width: 440px;
+        }
+
+        .hero-art {
+            align-self: end;
+            border-radius: 16px 16px 0 0;
+            overflow: hidden;
+            box-shadow: 0 -4px 40px rgba(0,0,0,0.3);
+            line-height: 0;
+        }
+
+        .hero-art svg { display: block; width: 100%; height: auto; }
+
+        /* ── LAYOUT ──────────────────────────────────────────────── */
+        main {
+            max-width: 1260px;
+            margin: 2rem auto;
+            padding: 0 1.25rem 3rem;
+            display: grid;
+            grid-template-columns: 1fr 440px;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            main { grid-template-columns: 1fr; }
+            .right-col { order: -1; }
+        }
+
+        .left-col { display: flex; flex-direction: column; gap: 1.25rem; }
+
+        /* ── CARDS ───────────────────────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 1.625rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-bottom: 1.25rem;
+            margin-bottom: 1.25rem;
+            border-bottom: 1.5px solid var(--border);
+        }
+
+        .chip {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px; flex-shrink: 0;
+        }
+
+        .chip-blue   { background: #dbeafe; }
+        .chip-green  { background: #d1fae5; }
+        .chip-orange { background: #fff0d8; }
+        .chip-purple { background: #ede9fe; }
+
+        .card-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+        .card-sub   { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
+
+        /* ── FORM ────────────────────────────────────────────────── */
+        .form-row { margin-bottom: 1.125rem; }
+        .form-row:last-child { margin-bottom: 0; }
+
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.875rem; }
+        @media (max-width: 520px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.4rem;
+        }
+
+        .input-group { display: flex; }
+
+        .adorn {
+            display: flex; align-items: center;
+            padding: 0 0.75rem;
+            background: #f4efe8;
+            border: 1.5px solid var(--border);
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: border-color 0.15s;
+        }
+
+        .adorn-l { border-right: none; border-radius: 9px 0 0 9px; }
+        .adorn-r { border-left:  none; border-radius: 0 9px 9px 0; }
+
+        .input-group input,
+        .input-group select,
+        .solo-input {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            border: 1.5px solid var(--border);
+            border-radius: 9px;
+            font-size: 0.9375rem;
+            color: var(--text);
+            background: #fff;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            -moz-appearance: textfield;
+        }
+
+        .input-group input::-webkit-inner-spin-button,
+        .input-group input::-webkit-outer-spin-button,
+        .solo-input::-webkit-inner-spin-button,
+        .solo-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+        .has-l input, .has-l select { border-radius: 0 9px 9px 0; }
+        .has-r input, .has-r select { border-radius: 9px 0 0 9px; }
+
+        .input-group:focus-within .adorn,
+        .input-group input:focus,
+        .input-group select:focus,
+        .solo-input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(26,95,180,0.13);
+        }
+
+        .input-group:focus-within .adorn { border-color: var(--blue); }
+
+        .hint {
+            font-size: 0.725rem;
+            color: var(--muted);
+            margin-top: 0.35rem;
+            line-height: 1.45;
+        }
+
+        /* toggle pills */
+        .pills { display: flex; gap: 0.375rem; margin-bottom: 0.5rem; }
+
+        .pill {
+            flex: 1;
+            padding: 0.475rem 0.625rem;
+            border: 1.5px solid var(--border);
+            background: #fff;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--muted);
+            transition: all 0.15s;
+            text-align: center;
+        }
+
+        .pill.on {
+            background: var(--blue);
+            color: #fff;
+            border-color: var(--blue);
+            box-shadow: 0 2px 8px rgba(26,95,180,0.3);
+        }
+
+        /* alerts */
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 9px;
+            font-size: 0.8rem;
+            line-height: 1.55;
+            margin-top: 0.625rem;
+            display: none;
+        }
+        .alert.show { display: block; }
+        .warn-alert { background: #fff8e8; border: 1.5px solid #f5c860; color: #8a5a00; }
+        .info-alert { background: #eef4ff; border: 1.5px solid #b8d4ff; color: #1a3f7a; }
+
+        /* ── RESULTS CARD ────────────────────────────────────────── */
+        .total-hero {
+            border-radius: 13px;
+            background: linear-gradient(145deg, #0d1f38 0%, #1a4080 100%);
+            padding: 1.75rem 1.25rem 1.5rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .total-hero::before {
+            content: '';
+            position: absolute;
+            top: -40px; right: -40px;
+            width: 140px; height: 140px;
+            background: radial-gradient(circle, rgba(126,184,245,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .total-hero .t-lbl {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255,255,255,0.55);
+        }
+
+        .total-hero .t-amt {
+            font-size: 3.25rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            color: #fff;
+            line-height: 1.1;
+            margin: 0.375rem 0 0.25rem;
+        }
+
+        .total-hero .t-sub {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.45);
+        }
+
+        .t-per-yr {
+            display: inline-block;
+            margin-top: 0.875rem;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.75);
+            padding: 0.3rem 0.875rem;
+            border-radius: 99px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+        }
+
+        /* stacked bar */
+        .seg-bar {
+            height: 18px;
+            border-radius: 9px;
+            display: flex;
+            overflow: hidden;
+            margin-bottom: 1.25rem;
+            background: #f4efe8;
+            gap: 2px;
+        }
+
+        .seg { transition: width 0.35s ease; border-radius: 0; }
+        .seg:first-child { border-radius: 9px 0 0 9px; }
+        .seg:last-child  { border-radius: 0 9px 9px 0; }
+
+        /* line items */
+        .line-items { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+
+        .line-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0.625rem;
+            border-radius: 8px;
+            transition: background 0.12s;
+        }
+
+        .line-item:hover { background: #f9f5f0; }
+
+        .swatch {
+            width: 11px; height: 11px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .li-label { flex: 1; font-size: 0.875rem; color: var(--text); }
+        .li-amt   { font-size: 0.875rem; font-weight: 700; color: var(--text); }
+        .li-pct   { font-size: 0.75rem; color: var(--muted); min-width: 2.75rem; text-align: right; }
+
+        /* divider */
+        hr { border: none; border-top: 1.5px solid var(--border); margin: 1.25rem 0; }
+
+        /* stats grid */
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
+
+        .stat-box {
+            background: #f9f5f1;
+            border: 1.5px solid var(--border);
+            border-radius: 11px;
+            padding: 0.875rem 1rem;
+        }
+
+        .stat-lbl {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--muted);
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-val {
+            font-size: 1.125rem;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        .stat-val.c-red    { color: var(--red); }
+        .stat-val.c-green  { color: var(--green); }
+        .stat-val.c-amber  { color: var(--amber); }
+
+        /* amortization */
+        .show-amort-btn {
+            width: 100%;
+            margin-top: 1.25rem;
+            padding: 0.75rem;
+            background: #f4efe8;
+            border: 1.5px solid var(--border);
+            border-radius: 9px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--blue);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .show-amort-btn:hover { background: #e8e0d4; border-color: #c4bab0; }
+
+        .amort-panel {
+            display: none;
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+        }
+
+        .amort-panel.open { display: block; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; min-width: 360px; }
+
+        thead th {
+            position: sticky; top: 0;
+            background: #f4efe8;
+            padding: 0.625rem 0.875rem;
+            text-align: right;
+            font-size: 0.725rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+            border-bottom: 1.5px solid var(--border);
+        }
+
+        thead th:first-child { text-align: left; }
+
+        tbody td {
+            padding: 0.5rem 0.875rem;
+            text-align: right;
+            border-bottom: 1px solid #f0ebe4;
+            color: var(--text);
+        }
+
+        tbody td:first-child { text-align: left; color: var(--muted); font-weight: 500; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:nth-child(even) { background: #faf7f3; }
+
+        /* util / maintenance auto estimate display */
+        .util-est {
+            padding: 0.7rem 0.9rem;
+            background: #edfaf3;
+            border: 1.5px solid #a3e6c2;
+            border-radius: 9px;
+            font-size: 1.125rem;
+            font-weight: 800;
+            color: #1a5c3a;
+            letter-spacing: -0.01em;
+        }
+
+        .auto-est {
+            padding: 0.7rem 0.9rem;
+            background: #f0f4ff;
+            border: 1.5px solid #b3c8f8;
+            border-radius: 9px;
+            font-size: 1.125rem;
+            font-weight: 800;
+            color: #1a3f8a;
+            letter-spacing: -0.01em;
+        }
+
+        /* percentage stepper */
+        .pct-stepper {
+            display: flex;
+            align-items: stretch;
+            border: 1.5px solid var(--border);
+            border-radius: 9px;
+            overflow: hidden;
+        }
+
+        .pct-stepper:focus-within {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(26,95,180,0.13);
+        }
+
+        .step-btn {
+            width: 46px;
+            background: #f4efe8;
+            border: none;
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.13s, color 0.13s;
+            flex-shrink: 0;
+            line-height: 1;
+            user-select: none;
+        }
+
+        .step-btn:hover  { background: #e5ddd4; color: var(--blue); }
+        .step-btn:active { background: #d8cfc4; }
+        .step-btn.step-l { border-right: 1.5px solid var(--border); }
+        .step-btn.step-r { border-left:  1.5px solid var(--border); }
+
+        .step-mid {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .step-mid input {
+            width: 100%;
+            border: none;
+            outline: none;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            padding: 0.65rem 1.5rem 0.65rem 0.5rem;
+            background: transparent;
+            -moz-appearance: textfield;
+        }
+
+        .step-mid input::-webkit-inner-spin-button,
+        .step-mid input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+        .step-sym {
+            position: absolute;
+            right: 0.625rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--muted);
+            pointer-events: none;
+        }
+
+        /* ── TABLET (single-column layout already kicks in at 900px) ── */
+        @media (max-width: 900px) {
+            .hero-text { padding-bottom: 1.5rem; }
+            main { margin: 1.5rem auto; padding: 0 1rem 2.5rem; }
+        }
+
+        /* ── PHONE ────────────────────────────────────────────────── */
+        @media (max-width: 640px) {
+            .hero { padding: 1.25rem 1rem 0; gap: 0; }
+            .hero-text { padding-bottom: 1.25rem; }
+            .hero-text h1 { font-size: 1.875rem; }
+            .hero-text p  { font-size: 0.875rem; margin-top: 0.5rem; }
+            .hero-badge   { font-size: 0.75rem; margin-bottom: 0.625rem; padding: 0.25rem 0.75rem; }
+
+            main { margin: 0.875rem auto; padding: 0 0.75rem 2rem; gap: 0.875rem; }
+
+            .left-col { gap: 0.875rem; }
+
+            .card { padding: 1.125rem; border-radius: 12px; }
+            .card-header { padding-bottom: 0.875rem; margin-bottom: 0.875rem; }
+
+            .total-hero { padding: 1.25rem 1rem 1.125rem; margin-bottom: 1.125rem; }
+            .total-hero .t-amt { font-size: 2.5rem; }
+            .total-hero .t-sub { display: none; }
+
+            .form-row { margin-bottom: 0.875rem; }
+
+            /* Comfortable touch targets (44px min) */
+            .pill            { padding: 0.625rem 0.75rem; min-height: 44px; font-size: 0.875rem; }
+            .input-group input,
+            .input-group select,
+            .solo-input      { padding: 0.75rem 0.875rem; min-height: 44px; }
+            .step-btn        { min-height: 44px; }
+            .show-amort-btn  { padding: 0.875rem; min-height: 44px; }
+
+            .adorn           { padding: 0 0.625rem; font-size: 0.8125rem; }
+
+            .seg-bar         { height: 14px; }
+            .line-items      { gap: 0.375rem; }
+            .line-item       { padding: 0.425rem 0.5rem; }
+            .stats           { gap: 0.625rem; }
+
+            thead th,
+            tbody td         { padding: 0.5rem 0.625rem; }
+        }
+
+        /* ── SMALL PHONE (≤ 400px) ────────────────────────────────── */
+        @media (max-width: 400px) {
+            .hero-text h1      { font-size: 1.625rem; }
+            .card              { padding: 0.875rem; }
+            .total-hero .t-amt { font-size: 2.125rem; }
+            .stats             { grid-template-columns: 1fr; }
+            .stat-val          { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══ HEADER ════════════════════════════════════════════════════════ -->
+<header>
+    <div class="hero">
+        <div class="hero-text">
+            <span class="hero-badge">🏡 Home Financing Tool</span>
+            <h1>Mortgage<br><span>Calculator</span></h1>
+            <p>Know your true monthly cost — principal, interest, taxes, PMI, insurance, utilities, and maintenance all in one place.</p>
+        </div>
+        <div class="hero-art">
+            <svg viewBox="0 0 520 310" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#5599cc"/>
+                        <stop offset="100%" stop-color="#a4ccee"/>
+                    </linearGradient>
+                    <linearGradient id="grassG" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#58b85a"/>
+                        <stop offset="100%" stop-color="#3a8c3c"/>
+                    </linearGradient>
+                    <linearGradient id="wallG" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#f8edd8"/>
+                        <stop offset="100%" stop-color="#e8d5b0"/>
+                    </linearGradient>
+                    <linearGradient id="roofG" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#484858"/>
+                        <stop offset="100%" stop-color="#2c2c3a"/>
+                    </linearGradient>
+                    <linearGradient id="garG" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#ede0c4"/>
+                        <stop offset="100%" stop-color="#daccaa"/>
+                    </linearGradient>
+                    <filter id="hshadow" x="-10%" y="-10%" width="120%" height="130%">
+                        <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="rgba(0,0,0,0.18)"/>
+                    </filter>
+                </defs>
+
+                <!-- Sky -->
+                <rect width="520" height="310" fill="url(#skyG)"/>
+
+                <!-- Sun -->
+                <circle cx="458" cy="52" r="52" fill="#fff4c0" opacity="0.35"/>
+                <circle cx="458" cy="52" r="34" fill="#ffd740" opacity="0.7"/>
+                <circle cx="458" cy="52" r="20" fill="#ffca28"/>
+
+                <!-- Clouds -->
+                <g fill="white" opacity="0.88">
+                    <ellipse cx="80"  cy="72" rx="52" ry="24"/>
+                    <ellipse cx="108" cy="60" rx="40" ry="26"/>
+                    <ellipse cx="54"  cy="70" rx="32" ry="20"/>
+                    <ellipse cx="320" cy="58" rx="44" ry="21"/>
+                    <ellipse cx="346" cy="47" rx="34" ry="22"/>
+                    <ellipse cx="298" cy="55" rx="28" ry="17"/>
+                </g>
+
+                <!-- Background hills -->
+                <ellipse cx="140" cy="245" rx="195" ry="72" fill="#64c464" opacity="0.22"/>
+                <ellipse cx="390" cy="252" rx="165" ry="62" fill="#54b454" opacity="0.18"/>
+
+                <!-- Grass -->
+                <rect x="0" y="238" width="520" height="72" fill="url(#grassG)"/>
+                <path d="M0,238 Q130,230 260,238 Q390,246 520,238 L520,255 L0,255 Z" fill="#68c868" opacity="0.6"/>
+
+                <!-- Driveway -->
+                <path d="M194,238 L226,238 L248,310 L172,310 Z" fill="#b4a490"/>
+                <path d="M194,238 L226,238 L248,310 L172,310 Z" fill="none" stroke="#a09080" stroke-width="1"/>
+
+                <!-- House group with shadow -->
+                <g filter="url(#hshadow)">
+
+                    <!-- Garage -->
+                    <rect x="86" y="162" width="120" height="96" fill="url(#garG)"/>
+                    <!-- Garage door -->
+                    <rect x="96"  y="172" width="100" height="78" rx="3" fill="#c8b898"/>
+                    <line x1="96"  y1="198" x2="196" y2="198" stroke="#a89070" stroke-width="1.5"/>
+                    <line x1="96"  y1="218" x2="196" y2="218" stroke="#a89070" stroke-width="1.5"/>
+                    <line x1="96"  y1="238" x2="196" y2="238" stroke="#a89070" stroke-width="1.5"/>
+                    <line x1="146" y1="172" x2="146" y2="250" stroke="#a89070" stroke-width="1.5"/>
+                    <rect x="137" y="246" width="18" height="4" rx="2" fill="#8a7060"/>
+                    <!-- Garage roof trim -->
+                    <rect x="80"  y="158" width="132" height="9"  fill="#3a3a4a"/>
+                    <polygon points="79,158 218,158 218,162 86,162" fill="#484858"/>
+
+                    <!-- Main body -->
+                    <rect x="185" y="125" width="250" height="135" fill="url(#wallG)"/>
+
+                    <!-- Porch beam + floor -->
+                    <rect x="180" y="218" width="260" height="17" fill="#d8c898"/>
+                    <rect x="180" y="233" width="260" height="8"  fill="#c8b880"/>
+                    <!-- Columns -->
+                    <rect x="202" y="174" width="10" height="77" rx="2" fill="#e8d8b5"/>
+                    <rect x="408" y="174" width="10" height="77" rx="2" fill="#e8d8b5"/>
+
+                    <!-- Main roof -->
+                    <polygon points="170,130 310,52 450,130" fill="url(#roofG)"/>
+                    <polygon points="163,132 310,52 457,132 450,130 310,55 170,130" fill="#30303e"/>
+                    <line x1="163" y1="132" x2="310" y2="52" stroke="#22222e" stroke-width="1.5"/>
+                    <line x1="310" y1="52"  x2="457" y2="132" stroke="#22222e" stroke-width="1.5"/>
+
+                    <!-- Chimney -->
+                    <rect x="368" y="72"  width="28" height="67" fill="#9a7055"/>
+                    <rect x="363" y="67"  width="38" height="11" rx="2" fill="#7a5540"/>
+                    <!-- Smoke puff -->
+                    <circle cx="378" cy="58" r="7" fill="rgba(200,200,210,0.45)"/>
+                    <circle cx="386" cy="50" r="9" fill="rgba(200,200,210,0.35)"/>
+                    <circle cx="393" cy="42" r="6" fill="rgba(200,200,210,0.25)"/>
+
+                    <!-- Dormer -->
+                    <polygon points="290,96 310,78 330,96" fill="#30303e"/>
+                    <rect x="295" y="96"  width="30" height="22" fill="#9ec8e0"/>
+                    <rect x="295" y="96"  width="30" height="22" fill="none" stroke="#5d4030" stroke-width="2"/>
+                    <line x1="310" y1="96"  x2="310" y2="118" stroke="#5d4030" stroke-width="1.5"/>
+                    <line x1="295" y1="107" x2="325" y2="107" stroke="#5d4030" stroke-width="1.5"/>
+
+                    <!-- Left window -->
+                    <rect x="205" y="146" width="52" height="50" rx="3" fill="#9ec8e0"/>
+                    <rect x="205" y="146" width="52" height="50" rx="3" fill="none" stroke="#5d4030" stroke-width="2.5"/>
+                    <line x1="231" y1="146" x2="231" y2="196" stroke="#5d4030" stroke-width="1.5"/>
+                    <line x1="205" y1="171" x2="257" y2="171" stroke="#5d4030" stroke-width="1.5"/>
+                    <!-- Shutters -->
+                    <rect x="192" y="144" width="14" height="54" rx="2" fill="#5c4830"/>
+                    <rect x="259" y="144" width="14" height="54" rx="2" fill="#5c4830"/>
+
+                    <!-- Right window -->
+                    <rect x="362" y="146" width="52" height="50" rx="3" fill="#9ec8e0"/>
+                    <rect x="362" y="146" width="52" height="50" rx="3" fill="none" stroke="#5d4030" stroke-width="2.5"/>
+                    <line x1="388" y1="146" x2="388" y2="196" stroke="#5d4030" stroke-width="1.5"/>
+                    <line x1="362" y1="171" x2="414" y2="171" stroke="#5d4030" stroke-width="1.5"/>
+                    <!-- Shutters -->
+                    <rect x="349" y="144" width="14" height="54" rx="2" fill="#5c4830"/>
+                    <rect x="416" y="144" width="14" height="54" rx="2" fill="#5c4830"/>
+
+                    <!-- Front door -->
+                    <rect x="286" y="178" width="60" height="80" rx="3" fill="#4e3420"/>
+                    <rect x="292" y="184" width="21" height="30" rx="2" fill="#9ec8e0"/>
+                    <rect x="317" y="184" width="21" height="30" rx="2" fill="#9ec8e0"/>
+                    <circle cx="338" cy="224" r="4"  fill="#d4a820"/>
+                    <rect x="280" y="256" width="72" height="6"  rx="2" fill="#8a7254"/>
+
+                </g>
+
+                <!-- Left tree -->
+                <rect x="32"  y="192" width="14" height="54" fill="#6b4c30"/>
+                <circle cx="39" cy="176" r="40" fill="#2d7832"/>
+                <circle cx="20" cy="196" r="25" fill="#378a3d"/>
+                <circle cx="58" cy="190" r="23" fill="#257a2b"/>
+
+                <!-- Right evergreen -->
+                <rect x="468" y="210" width="12" height="36" fill="#6b4c30"/>
+                <polygon points="474,150 500,215 448,215" fill="#2a6830"/>
+                <polygon points="474,165 496,222 452,222" fill="#347838"/>
+
+                <!-- Bushes -->
+                <circle cx="155" cy="240" r="18" fill="#3a7a3a"/>
+                <circle cx="171" cy="237" r="14" fill="#4a8a4a"/>
+                <circle cx="450" cy="240" r="16" fill="#3a7a3a"/>
+                <circle cx="437" cy="237" r="13" fill="#4a8a4a"/>
+
+                <!-- Flowers (left bed) -->
+                <ellipse cx="188" cy="241" rx="32" ry="9" fill="#337a33"/>
+                <circle cx="170" cy="236" r="6" fill="#e94d90"/>
+                <circle cx="182" cy="235" r="5" fill="#ff6b35"/>
+                <circle cx="194" cy="237" r="6" fill="#e94d90"/>
+                <circle cx="206" cy="235" r="5" fill="#ff9820"/>
+
+                <!-- Flowers (right bed) -->
+                <ellipse cx="432" cy="241" rx="30" ry="9" fill="#337a33"/>
+                <circle cx="414" cy="236" r="5" fill="#ff6b35"/>
+                <circle cx="426" cy="235" r="6" fill="#e94d90"/>
+                <circle cx="438" cy="237" r="5" fill="#ff9820"/>
+                <circle cx="450" cy="235" r="5" fill="#e94d90"/>
+
+                <!-- Stepping stones -->
+                <ellipse cx="208" cy="258" rx="14" ry="5" fill="#c8b898" opacity="0.75"/>
+                <ellipse cx="230" cy="268" rx="13" ry="5" fill="#c8b898" opacity="0.75"/>
+                <ellipse cx="255" cy="276" rx="13" ry="5" fill="#c8b898" opacity="0.75"/>
+                <ellipse cx="278" cy="280" rx="14" ry="5" fill="#c8b898" opacity="0.75"/>
+                <ellipse cx="302" cy="278" rx="12" ry="5" fill="#c8b898" opacity="0.75"/>
+
+                <!-- Mailbox -->
+                <rect x="476" y="228" width="17" height="12" rx="3" fill="#8a7055"/>
+                <rect x="479" y="228" width="3"  height="16" fill="#6a5040"/>
+            </svg>
+        </div>
+    </div>
+</header>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════ -->
+<main>
+
+    <!-- ── LEFT COLUMN: inputs ── -->
+    <div class="left-col">
+
+        <!-- Loan Details -->
+        <div class="card">
+            <div class="card-header">
+                <div class="chip chip-blue">🏠</div>
+                <div>
+                    <div class="card-title">Loan Details</div>
+                    <div class="card-sub">Home price, down payment & financing terms</div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>Home Price</label>
+                <div class="input-group has-l">
+                    <span class="adorn adorn-l">$</span>
+                    <input type="text" id="homePrice" value="450,000" inputmode="decimal" data-fmt="dollar">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>Down Payment</label>
+                <div class="pills">
+                    <button class="pill on" id="btnDollar" onclick="setDPMode('dollar')">$ Amount</button>
+                    <button class="pill"    id="btnPct"    onclick="setDPMode('pct')">% of Price</button>
+                </div>
+                <div id="dpDollarWrap">
+                    <div class="input-group has-l">
+                        <span class="adorn adorn-l">$</span>
+                        <input type="text" id="dpDollar" value="90,000" inputmode="decimal" data-fmt="dollar">
+                    </div>
+                </div>
+                <div id="dpPctWrap" style="display:none">
+                    <div class="pct-stepper">
+                        <button class="step-btn step-l" type="button" onclick="stepPct(-0.5)">−</button>
+                        <div class="step-mid">
+                            <input type="number" id="dpPct" value="20" min="0" max="100" step="0.5">
+                            <span class="step-sym">%</span>
+                        </div>
+                        <button class="step-btn step-r" type="button" onclick="stepPct(0.5)">+</button>
+                    </div>
+                </div>
+                <div class="hint" id="dpHint"></div>
+            </div>
+
+            <div class="two-col">
+                <div class="form-row">
+                    <label>Interest Rate</label>
+                    <div class="input-group has-r">
+                        <input type="number" id="rate" value="6.75" min="0" max="30" step="0.125">
+                        <span class="adorn adorn-r">% / yr</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Loan Term</label>
+                    <div class="input-group">
+                        <select id="term" class="solo-input" style="border-radius:9px">
+                            <option value="30" selected>30 years</option>
+                            <option value="20">20 years</option>
+                            <option value="15">15 years</option>
+                            <option value="10">10 years</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>Loan Type</label>
+                <div class="input-group">
+                    <select id="loanType" class="solo-input" style="border-radius:9px">
+                        <option value="conventional" selected>Conventional</option>
+                        <option value="fha">FHA</option>
+                        <option value="va">VA (no PMI)</option>
+                        <option value="usda">USDA</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taxes, Insurance & Fees -->
+        <div class="card">
+            <div class="card-header">
+                <div class="chip chip-green">📋</div>
+                <div>
+                    <div class="card-title">Taxes, Insurance &amp; Fees</div>
+                    <div class="card-sub">Ongoing ownership costs beyond the mortgage</div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>Property Tax Rate</label>
+                <div class="input-group has-r">
+                    <input type="number" id="taxRate" value="1.10" min="0" max="5" step="0.05">
+                    <span class="adorn adorn-r">% / yr</span>
+                </div>
+                <div class="hint">U.S. average ≈ 1.1% &mdash; ranges from 0.3% (HI) to 2.5% (NJ).</div>
+            </div>
+
+            <div class="form-row">
+                <label>Homeowners Insurance</label>
+                <div class="input-group has-l">
+                    <span class="adorn adorn-l">$</span>
+                    <input type="text" id="insurance" value="1,575" inputmode="decimal" data-fmt="dollar">
+                </div>
+                <div class="hint">Annual premium. Auto-estimated from home price; edit to override.</div>
+            </div>
+
+            <div class="form-row">
+                <label>PMI Rate (if applicable)</label>
+                <div class="input-group has-r">
+                    <input type="number" id="pmiRate" value="0.85" min="0" max="3" step="0.05">
+                    <span class="adorn adorn-r">% / yr</span>
+                </div>
+                <div class="hint">Typical 0.5%–1.5% of loan. Charged until you reach 20% equity.</div>
+                <div class="alert warn-alert" id="pmiAlert"></div>
+            </div>
+
+            <div class="form-row">
+                <label>HOA Fee</label>
+                <div class="input-group has-l">
+                    <span class="adorn adorn-l">$</span>
+                    <input type="text" id="hoa" value="0" inputmode="decimal" data-fmt="dollar">
+                </div>
+                <div class="hint">Monthly. Enter 0 if none.</div>
+            </div>
+
+            <div class="form-row">
+                <label>Maintenance Reserve</label>
+                <div class="two-col">
+                    <div>
+                        <div class="auto-est" id="maintDisplay">$—</div>
+                        <div class="hint">Auto: 1% of home value ÷ 12</div>
+                    </div>
+                    <div>
+                        <div class="input-group has-l">
+                            <span class="adorn adorn-l">$</span>
+                            <input type="text" id="maintOverride" placeholder="Override" inputmode="decimal" data-fmt="dollar">
+                        </div>
+                        <div class="hint">Leave blank to use auto.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Utilities -->
+        <div class="card">
+            <div class="card-header">
+                <div class="chip chip-orange">⚡</div>
+                <div>
+                    <div class="card-title">Utilities Estimator</div>
+                    <div class="card-sub">Electric, gas, water &amp; trash based on your home</div>
+                </div>
+            </div>
+
+            <div class="two-col">
+                <div class="form-row">
+                    <label>Square Footage</label>
+                    <div class="input-group has-r">
+                        <input type="text" id="sqft" value="2,000" inputmode="decimal" data-fmt="number">
+                        <span class="adorn adorn-r">sq ft</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Est. Monthly Total</label>
+                    <div class="util-est" id="utilDisplay">$—</div>
+                    <div class="hint">Electric · Gas · Water · Trash</div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>Climate Zone</label>
+                <div class="input-group">
+                    <select id="climate" class="solo-input" style="border-radius:9px">
+                        <option value="veryCold">Very Cold — MN, ND, ME, northern WI</option>
+                        <option value="cold" selected>Cold — IL, PA, NY, CO, MI</option>
+                        <option value="moderate">Moderate — CA, OR, WA, VA, NC</option>
+                        <option value="hot">Hot — TX, FL, AZ, GA, SC</option>
+                        <option value="veryHot">Very Hot — Phoenix, Las Vegas, Miami</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="two-col">
+                <div class="form-row">
+                    <label>Home Age / Efficiency</label>
+                    <div class="input-group">
+                        <select id="homeAge" class="solo-input" style="border-radius:9px">
+                            <option value="new">New build (2020+)</option>
+                            <option value="recent">Recent (2010–2019)</option>
+                            <option value="modern">Modern (2000–2009)</option>
+                            <option value="older" selected>Older (1980–1999)</option>
+                            <option value="old">Old (pre-1980)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Override Monthly Total</label>
+                    <div class="input-group has-l">
+                        <span class="adorn adorn-l">$</span>
+                        <input type="text" id="utilOverride" placeholder="Auto" inputmode="decimal" data-fmt="dollar">
+                    </div>
+                    <div class="hint">Leave blank to use estimate.</div>
+                </div>
+            </div>
+
+            <div class="alert info-alert" id="utilBreakdown"></div>
+        </div>
+    </div>
+
+    <!-- ── RIGHT COLUMN: results (sticky) ── -->
+    <div class="right-col">
+        <div class="card">
+            <div class="card-header">
+                <div class="chip chip-purple">📊</div>
+                <div>
+                    <div class="card-title">Monthly Cost Breakdown</div>
+                    <div class="card-sub">All-in estimate</div>
+                </div>
+            </div>
+
+            <div class="total-hero">
+                <div class="t-lbl">Estimated Monthly Total</div>
+                <div class="t-amt" id="totalAmt">$—</div>
+                <div class="t-sub" id="totalSub">calculating…</div>
+                <div class="t-per-yr" id="totalPerYr">— / year</div>
+            </div>
+
+            <div class="seg-bar" id="segBar"></div>
+            <div class="line-items" id="lineItems"></div>
+
+            <hr>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-lbl">Loan Amount</div>
+                    <div class="stat-val" id="sLoan">—</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-lbl">Total Interest</div>
+                    <div class="stat-val c-red" id="sInterest">—</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-lbl">Cost Over Term</div>
+                    <div class="stat-val" id="sTotalCost">—</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-lbl">Income Needed</div>
+                    <div class="stat-val c-amber" id="sDTI">—</div>
+                    <div class="hint" style="margin-top:.2rem">at 28% DTI rule</div>
+                </div>
+            </div>
+
+            <button class="show-amort-btn" id="amortBtn" onclick="toggleAmort()">
+                Show Amortization Schedule ▾
+            </button>
+            <div class="amort-panel" id="amortPanel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Principal</th>
+                            <th>Interest</th>
+                            <th>Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="amortBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+    // ── Color palette for breakdown ──────────────────────────────────────────
+    const C = {
+        pi:          '#1a5fb4',
+        tax:         '#d97f28',
+        insurance:   '#2a7d4a',
+        pmi:         '#c03a3a',
+        hoa:         '#6640c0',
+        maintenance: '#5a6578',
+        utilities:   '#0a8599',
+    };
+
+    // ── Utility rate model: base $1.50/sqft/yr × climate × age factors ───────
+    const UTIL = {
+        climate: { veryCold: 1.47, cold: 1.20, moderate: 0.93, hot: 1.13, veryHot: 1.33 },
+        age:     { new: 0.70, recent: 0.82, modern: 0.95, older: 1.10, old: 1.28 },
+    };
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let dpMode = 'dollar';
+    let insManual = false;
+
+    // ── Number formatting helpers ────────────────────────────────────────────
+    function stripCommas(s) { return (s || '').toString().replace(/,/g, ''); }
+    function addCommas(n)   { return Math.round(n).toLocaleString('en-US'); }
+
+    function val(id) {
+        return parseFloat(stripCommas(document.getElementById(id).value)) || 0;
+    }
+    function sel(id)  { return document.getElementById(id).value; }
+    function show(id) { document.getElementById(id).style.display = ''; }
+    function hide(id) { document.getElementById(id).style.display = 'none'; }
+    function fmt(n)   { return '$' + addCommas(n); }
+    function fmtR(n)  { return '$' + Math.round(n).toLocaleString('en-US'); }
+
+    // Attach comma formatting to dollar/number text inputs
+    document.querySelectorAll('[data-fmt]').forEach(el => {
+        el.addEventListener('blur', () => {
+            const n = parseFloat(stripCommas(el.value));
+            if (!isNaN(n) && el.value.trim() !== '') {
+                el.value = addCommas(n);
+            }
+        });
+        el.addEventListener('focus', () => {
+            el.value = stripCommas(el.value);
+        });
+        el.addEventListener('input',  calculate);
+        el.addEventListener('change', calculate);
+    });
+
+    // ── Down payment mode ────────────────────────────────────────────────────
+    function setDPMode(mode) {
+        dpMode = mode;
+        const price = val('homePrice');
+        if (mode === 'dollar') {
+            document.getElementById('btnDollar').classList.add('on');
+            document.getElementById('btnPct').classList.remove('on');
+            show('dpDollarWrap'); hide('dpPctWrap');
+            const pct = val('dpPct');
+            document.getElementById('dpDollar').value = addCommas(Math.round(price * pct / 100));
+        } else {
+            document.getElementById('btnPct').classList.add('on');
+            document.getElementById('btnDollar').classList.remove('on');
+            hide('dpDollarWrap'); show('dpPctWrap');
+            const dp = parseFloat(stripCommas(document.getElementById('dpDollar').value)) || 0;
+            document.getElementById('dpPct').value = price > 0 ? ((dp / price) * 100).toFixed(1) : '20';
+        }
+        calculate();
+    }
+
+    function getDP() {
+        const price = val('homePrice');
+        if (dpMode === 'dollar') return val('dpDollar');
+        return price * val('dpPct') / 100;
+    }
+
+    function stepPct(delta) {
+        const el = document.getElementById('dpPct');
+        let v = parseFloat(el.value) || 0;
+        v = Math.round((v + delta) * 10) / 10;
+        v = Math.min(100, Math.max(0, v));
+        el.value = v;
+        calculate();
+    }
+
+    // ── Utility estimate ─────────────────────────────────────────────────────
+    function estimateUtil() {
+        const sqft   = val('sqft');
+        const climate = sel('climate');
+        const age     = sel('homeAge');
+        const factor  = UTIL.climate[climate] * UTIL.age[age];
+        return Math.round((sqft * 1.50 * factor) / 12);
+    }
+
+    // ── Main calculation ─────────────────────────────────────────────────────
+    function calculate() {
+        const price      = val('homePrice');
+        const dp         = getDP();
+        const loan       = Math.max(0, price - dp);
+        const annualRate = val('rate');
+        const termYrs    = parseInt(sel('term'));
+        const taxRate    = val('taxRate');
+        const pmiRate    = val('pmiRate');
+        const hoa        = val('hoa');
+        const loanType   = sel('loanType');
+
+        // Auto-estimate insurance
+        if (!insManual && price > 0) {
+            const n = Math.round(price * 0.0035);
+            document.getElementById('insurance').value = addCommas(n);
+        }
+        const annualIns = val('insurance');
+
+        // Maintenance reserve: auto = 1%/yr ÷ 12, override if field is filled
+        const maintAuto = price > 0 ? Math.round(price * 0.01 / 12) : 0;
+        document.getElementById('maintDisplay').textContent = fmt(maintAuto);
+        const maintRaw = stripCommas(document.getElementById('maintOverride').value);
+        const maintenance = maintRaw ? parseFloat(maintRaw) : maintAuto;
+
+        // P&I
+        const r = annualRate / 100 / 12;
+        const n = termYrs * 12;
+        const monthlyPI = r === 0
+            ? (loan / n)
+            : loan * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+
+        const monthlyTax = (price * taxRate / 100) / 12;
+        const monthlyIns = annualIns / 12;
+
+        // PMI
+        const dpPct     = price > 0 ? (dp / price) * 100 : 0;
+        const pmiApplies = dpPct < 20 && loanType !== 'va';
+        let monthlyPMI = 0;
+
+        if (pmiApplies) {
+            monthlyPMI = (loan * pmiRate / 100) / 12;
+            const targetBal = price * 0.80;
+            let bal = loan, pmiDropMonth = null;
+            for (let i = 1; i <= n; i++) {
+                const interest = bal * r;
+                bal -= (monthlyPI - interest);
+                if (bal <= targetBal) { pmiDropMonth = i; break; }
+            }
+            const el = document.getElementById('pmiAlert');
+            el.classList.add('show');
+            const dropStr = pmiDropMonth
+                ? ` Cancels ~month&nbsp;${pmiDropMonth} (year&nbsp;${Math.floor(pmiDropMonth/12)}).`
+                : ' May not cancel within this loan term.';
+            el.innerHTML = `⚠️ PMI applies &mdash; ${dpPct.toFixed(1)}% down (${(20-dpPct).toFixed(1)}% below the 20% threshold).${dropStr}`;
+        } else {
+            document.getElementById('pmiAlert').classList.remove('show');
+        }
+
+        // DP hint
+        const hint = document.getElementById('dpHint');
+        hint.innerHTML = dpMode === 'dollar'
+            ? `${dpPct.toFixed(1)}% of home price`
+            : `${fmtR(dp)} down payment`;
+
+        if (dpPct >= 20)      hint.innerHTML += ' &mdash; <strong style="color:#2a7d4a">No PMI required ✓</strong>';
+        else if (loanType === 'va') hint.innerHTML += ' &mdash; <strong style="color:#2a7d4a">VA loan: no PMI ✓</strong>';
+
+        // Utilities
+        const utilEst      = estimateUtil();
+        document.getElementById('utilDisplay').textContent = fmt(utilEst);
+        const utilRaw      = stripCommas(document.getElementById('utilOverride').value);
+        const monthlyUtil  = utilRaw ? parseFloat(utilRaw) : utilEst;
+
+        const e = Math.round(monthlyUtil * 0.45);
+        const g = Math.round(monthlyUtil * 0.25);
+        const w = Math.round(monthlyUtil * 0.20);
+        const t = Math.round(monthlyUtil * 0.10);
+        const bd = document.getElementById('utilBreakdown');
+        bd.innerHTML = `Estimated split &mdash; Electric: ${fmt(e)} &nbsp;·&nbsp; Gas: ${fmt(g)} &nbsp;·&nbsp; Water: ${fmt(w)} &nbsp;·&nbsp; Trash: ${fmt(t)}`;
+        bd.classList.add('show');
+
+        // Total
+        const total = monthlyPI + monthlyTax + monthlyIns + monthlyPMI + hoa + maintenance + monthlyUtil;
+
+        const itemDefs = [
+            { label: 'Principal & Interest', value: monthlyPI,   color: C.pi },
+            { label: 'Property Tax',          value: monthlyTax,  color: C.tax },
+            { label: 'Homeowners Insurance',  value: monthlyIns,  color: C.insurance },
+            pmiApplies          && { label: 'PMI',               value: monthlyPMI,  color: C.pmi },
+            hoa > 0             && { label: 'HOA Fee',           value: hoa,         color: C.hoa },
+            maintenance > 0     && { label: 'Maintenance',       value: maintenance, color: C.maintenance },
+            monthlyUtil > 0     && { label: 'Utilities (est.)',  value: monthlyUtil, color: C.utilities },
+        ].filter(Boolean);
+
+        // Render total
+        document.getElementById('totalAmt').textContent    = fmt(total);
+        document.getElementById('totalSub').textContent    = itemDefs.map(i => i.label).join(' + ');
+        document.getElementById('totalPerYr').textContent  = fmtR(total * 12) + ' / year';
+
+        // Segmented bar
+        document.getElementById('segBar').innerHTML = itemDefs.map((i, idx) => {
+            const r = idx === 0 ? '9px 0 0 9px' : idx === itemDefs.length - 1 ? '0 9px 9px 0' : '0';
+            return `<div class="seg" style="width:${(i.value/total*100).toFixed(2)}%;background:${i.color};border-radius:${r}"></div>`;
+        }).join('');
+
+        // Line items
+        document.getElementById('lineItems').innerHTML = itemDefs.map(i => `
+            <div class="line-item">
+                <div class="swatch" style="background:${i.color}"></div>
+                <div class="li-label">${i.label}</div>
+                <div class="li-amt">${fmt(i.value)}</div>
+                <div class="li-pct">${(i.value/total*100).toFixed(0)}%</div>
+            </div>
+        `).join('');
+
+        // Stats
+        document.getElementById('sLoan').textContent     = fmtR(loan);
+        const totalInterest = Math.max(0, (monthlyPI * n) - loan);
+        document.getElementById('sInterest').textContent = fmtR(totalInterest);
+        document.getElementById('sTotalCost').textContent = fmtR(total * n);
+        const pitiMonthly = monthlyPI + monthlyTax + monthlyIns;
+        document.getElementById('sDTI').textContent = fmtR(pitiMonthly / 0.28 * 12) + ' / yr';
+
+        // Rebuild amort if open
+        if (document.getElementById('amortPanel').classList.contains('open')) {
+            buildAmort(loan, r, n, monthlyPI);
+        }
+    }
+
+    // ── Amortization ─────────────────────────────────────────────────────────
+    function buildAmort(loan, r, n, payment) {
+        let bal = loan, rows = '';
+        for (let yr = 1; yr <= Math.ceil(n / 12); yr++) {
+            let yP = 0, yI = 0;
+            for (let m = 0; m < 12 && (yr - 1) * 12 + m < n; m++) {
+                const interest  = bal * r;
+                const principal = Math.min(payment - interest, bal);
+                yI += interest; yP += principal;
+                bal -= principal;
+                if (bal < 0.01) bal = 0;
+            }
+            rows += `<tr>
+                <td>Year ${yr}</td>
+                <td>${fmtR(yP)}</td>
+                <td>${fmtR(yI)}</td>
+                <td>${fmtR(Math.max(0, bal))}</td>
+            </tr>`;
+            if (bal === 0) break;
+        }
+        document.getElementById('amortBody').innerHTML = rows;
+    }
+
+    function toggleAmort() {
+        const panel = document.getElementById('amortPanel');
+        const btn   = document.getElementById('amortBtn');
+        const open  = panel.classList.toggle('open');
+        btn.textContent = open ? 'Hide Amortization Schedule ▴' : 'Show Amortization Schedule ▾';
+        if (open) {
+            const price   = val('homePrice');
+            const dp      = getDP();
+            const loan    = Math.max(0, price - dp);
+            const r       = val('rate') / 100 / 12;
+            const n       = parseInt(sel('term')) * 12;
+            const payment = r === 0 ? loan / n
+                : loan * (r * Math.pow(1+r,n)) / (Math.pow(1+r,n) - 1);
+            buildAmort(loan, r, n, payment);
+        }
+    }
+
+    // ── Event wiring ─────────────────────────────────────────────────────────
+    document.getElementById('insurance').addEventListener('input', () => { insManual = true; calculate(); });
+
+    document.getElementById('homePrice').addEventListener('input', () => {
+        insManual = false; calculate();
+    });
+
+    ['dpDollar','dpPct','rate','term','loanType',
+     'taxRate','pmiRate','hoa','maintOverride',
+     'sqft','climate','homeAge','utilOverride'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input',  calculate);
+        el.addEventListener('change', calculate);
+    });
+
+    // Initial render
+    calculate();
+</script>
+
+</body>
+</html>
