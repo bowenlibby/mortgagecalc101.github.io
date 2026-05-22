@@ -198,6 +198,7 @@
             outline: none;
             transition: border-color 0.15s, box-shadow 0.15s;
             -moz-appearance: textfield;
+            appearance: textfield;
         }
 
         .input-group input::-webkit-inner-spin-button,
@@ -523,6 +524,7 @@
             padding: 0.65rem 1.5rem 0.65rem 0.5rem;
             background: transparent;
             -moz-appearance: textfield;
+            appearance: textfield;
         }
 
         .step-mid input::-webkit-inner-spin-button,
@@ -1109,6 +1111,12 @@
                     <div class="hint" style="margin-top:.2rem">at 28% front-end DTI rule</div>
                     <div class="hint" id="dtiNote36" style="display:none;margin-top:.2rem"></div>
                 </div>
+                <div class="stat-box" style="grid-column: span 2">
+                    <div class="stat-lbl">Cash Needed to Close</div>
+                    <div class="stat-val c-green" id="sCashClose">—</div>
+                    <div class="hint" id="cashCloseNote" style="margin-top:.2rem"></div>
+                    <div class="hint" style="margin-top:.2rem">Closing costs are an estimate (typically 2–5% in Utah) and vary by lender, loan type, and county. Seller concessions may offset them.</div>
+                </div>
             </div>
 
             <button class="show-amort-btn" id="amortBtn" onclick="toggleAmort()">
@@ -1170,17 +1178,18 @@
 
     // ── State ────────────────────────────────────────────────────────────────
     let dpMode = 'dollar';
+    let ccMode = 'pct';
     let insManual = false;
     let maintManual = false;
 
     // ── localStorage persistence ─────────────────────────────────────────────
     const LS_KEY = 'mortgageCalc_v1';
-    const TEXT_FIELDS   = ['homePrice','dpDollar','insurance','hoa','otherDebts','maintOverride','sqft','utilOverride'];
-    const NUMBER_FIELDS = ['dpPct','rate','taxRate','pmiRate'];
+    const TEXT_FIELDS   = ['homePrice','dpDollar','ccClosingDollar','insurance','hoa','otherDebts','maintOverride','sqft','utilOverride'];
+    const NUMBER_FIELDS = ['dpPct','ccPct','rate','taxRate','pmiRate'];
     const SELECT_FIELDS = ['term','loanType','state','homeAge'];
 
     function saveState() {
-        const s = { dpMode, insManual, maintManual };
+        const s = { dpMode, ccMode, insManual, maintManual };
         TEXT_FIELDS.concat(NUMBER_FIELDS).forEach(id => {
             const el = document.getElementById(id);
             if (el) s[id] = el.value;
@@ -1198,6 +1207,7 @@
         if (!s) return;
 
         if (s.dpMode) dpMode = s.dpMode;
+        if (s.ccMode) ccMode = s.ccMode;
         if (s.insManual  !== undefined) insManual  = s.insManual;
         if (s.maintManual !== undefined) maintManual = s.maintManual;
 
@@ -1221,11 +1231,19 @@
             document.getElementById('dpDollarWrap').style.display = 'none';
             document.getElementById('dpPctWrap').style.display = '';
         }
+
+        // Restore CC mode UI
+        if (ccMode === 'dollar') {
+            document.getElementById('btnCCDollar').classList.add('on');
+            document.getElementById('btnCCPct').classList.remove('on');
+            document.getElementById('ccDollarWrap').style.display = '';
+            document.getElementById('ccPctWrap').style.display = 'none';
+        }
     }
 
     // ── Number formatting helpers ────────────────────────────────────────────
     function stripCommas(s) { return (s || '').toString().replace(/,/g, ''); }
-    function addCommas(n)   { return Math.round(n).toLocaleString('en-US'); }
+    function addCommas(n)   { const v = isNaN(n) || !isFinite(n) ? 0 : n; return Math.round(v).toLocaleString('en-US'); }
 
     function val(id) {
         const n = parseFloat(stripCommas(document.getElementById(id).value));
@@ -1235,13 +1253,18 @@
     function show(id) { document.getElementById(id).style.display = ''; }
     function hide(id) { document.getElementById(id).style.display = 'none'; }
     function fmt(n)   { return '$' + addCommas(n); }
-    function fmtR(n)  { return '$' + Math.round(n).toLocaleString('en-US'); }
+    function fmtR(n)  { return '$' + addCommas(n); }
 
     // Live comma formatting: reformat while typing, preserving cursor position
     function liveFormat(el) {
         const cur = el.selectionStart;
-        const digitsLeft = el.value.substring(0, cur).replace(/[^0-9]/g, '').length;
-        const digits = el.value.replace(/[^0-9]/g, '');
+        // Truncate at the first decimal point — these are whole-integer fields
+        const raw = el.value;
+        const dotIdx = raw.indexOf('.');
+        const intPart = dotIdx >= 0 ? raw.slice(0, dotIdx) : raw;
+        const curCapped = dotIdx >= 0 ? Math.min(cur, dotIdx) : cur;
+        const digitsLeft = intPart.substring(0, curCapped).replace(/[^0-9]/g, '').length;
+        const digits = intPart.replace(/[^0-9]/g, '');
         const formatted = digits === '' ? '' : parseInt(digits, 10).toLocaleString('en-US');
         el.value = formatted;
         let counted = 0;
@@ -1254,7 +1277,11 @@
     }
 
     document.querySelectorAll('[data-fmt]').forEach(el => {
-        el.addEventListener('input',  () => { liveFormat(el); calculate(); });
+        el.addEventListener('input', () => {
+            if (el.id === 'insurance') insManual = true;
+            liveFormat(el);
+            calculate();
+        });
         el.addEventListener('change', calculate);
     });
 
@@ -1293,6 +1320,39 @@
         calculate();
     }
 
+    function getClosing() {
+        const price = val('homePrice');
+        if (ccMode === 'dollar') return val('ccClosingDollar');
+        return price * val('ccPct') / 100;
+    }
+
+    function setCCMode(mode) {
+        ccMode = mode;
+        const price = val('homePrice');
+        if (mode === 'dollar') {
+            document.getElementById('btnCCDollar').classList.add('on');
+            document.getElementById('btnCCPct').classList.remove('on');
+            show('ccDollarWrap'); hide('ccPctWrap');
+            document.getElementById('ccClosingDollar').value = addCommas(Math.round(price * val('ccPct') / 100));
+        } else {
+            document.getElementById('btnCCPct').classList.add('on');
+            document.getElementById('btnCCDollar').classList.remove('on');
+            show('ccPctWrap'); hide('ccDollarWrap');
+            const cc = parseFloat(stripCommas(document.getElementById('ccClosingDollar').value)) || 0;
+            document.getElementById('ccPct').value = price > 0 ? ((cc / price) * 100).toFixed(2) : '3';
+        }
+        calculate();
+    }
+
+    function stepCCPct(delta) {
+        const el = document.getElementById('ccPct');
+        let v = parseFloat(el.value) || 0;
+        v = Math.round((v + delta) * 100) / 100;
+        v = Math.min(15, Math.max(0, v));
+        el.value = v;
+        calculate();
+    }
+
     // ── Utility estimate ─────────────────────────────────────────────────────
     function estimateUtil() {
         const sqft  = val('sqft');
@@ -1311,6 +1371,8 @@
         const price      = val('homePrice');
         const dp         = getDP();
         const loan       = Math.max(0, price - dp);
+        const closing    = getClosing();
+        const cashClose  = dp + closing;
         const annualRate = val('rate');
         const termYrs    = parseInt(sel('term'));
         const taxRate    = val('taxRate');
@@ -1373,11 +1435,18 @@
         if (dpPct >= 20)      hint.innerHTML += ' &mdash; <strong style="color:#2a7d4a">No PMI required ✓</strong>';
         else if (loanType === 'va') hint.innerHTML += ' &mdash; <strong style="color:#2a7d4a">VA loan: no PMI ✓</strong>';
 
+        // CC hint
+        const ccPctOfPrice = price > 0 ? (closing / price * 100) : 0;
+        document.getElementById('ccHint').innerHTML = ccMode === 'dollar'
+            ? `${ccPctOfPrice.toFixed(2)}% of home price`
+            : `${fmtR(closing)} closing costs`;
+
         // Utilities
         const utilEst      = estimateUtil();
         document.getElementById('utilDisplay').textContent = fmt(utilEst);
         const utilRaw      = stripCommas(document.getElementById('utilOverride').value);
-        const monthlyUtil  = utilRaw ? parseFloat(utilRaw) : utilEst;
+        const parsedUtil   = parseFloat(utilRaw);
+        const monthlyUtil  = utilRaw && isFinite(parsedUtil) ? parsedUtil : utilEst;
 
         const e = Math.round(monthlyUtil * 0.45);
         const g = Math.round(monthlyUtil * 0.25);
@@ -1406,10 +1475,10 @@
         document.getElementById('totalPerYr').textContent  = fmtR(total * 12) + ' / year';
 
         // Segmented bar
-        document.getElementById('segBar').innerHTML = itemDefs.map((i, idx) => {
+        document.getElementById('segBar').innerHTML = total > 0 ? itemDefs.map((i, idx) => {
             const r = idx === 0 ? '9px 0 0 9px' : idx === itemDefs.length - 1 ? '0 9px 9px 0' : '0';
             return `<div class="seg" style="width:${(i.value/total*100).toFixed(2)}%;background:${i.color};border-radius:${r}"></div>`;
-        }).join('');
+        }).join('') : '';
 
         // Line items
         document.getElementById('lineItems').innerHTML = itemDefs.map(i => `
@@ -1417,7 +1486,7 @@
                 <div class="swatch" style="background:${i.color}"></div>
                 <div class="li-label">${i.label}</div>
                 <div class="li-amt">${fmt(i.value)}</div>
-                <div class="li-pct">${(i.value/total*100).toFixed(0)}%</div>
+                <div class="li-pct">${total > 0 ? (i.value/total*100).toFixed(0) : '0'}%</div>
             </div>
         `).join('');
 
@@ -1440,6 +1509,9 @@
         } else {
             note36.style.display = 'none';
         }
+
+        document.getElementById('sCashClose').textContent    = fmtR(cashClose);
+        document.getElementById('cashCloseNote').textContent = `${fmtR(dp)} down + ${fmtR(closing)} closing`;
 
         // Rebuild amort if open
         if (document.getElementById('amortPanel').classList.contains('open')) {
@@ -1489,7 +1561,7 @@
     }
 
     // ── Event wiring ─────────────────────────────────────────────────────────
-    document.getElementById('insurance').addEventListener('input', () => { insManual = true; calculate(); });
+    // insurance is wired once via [data-fmt] above (insManual set there)
     document.getElementById('maintOverride').addEventListener('input', () => {
         maintManual = true;
         liveFormat(document.getElementById('maintOverride'));
@@ -1500,13 +1572,19 @@
         insManual = false; maintManual = false; calculate();
     });
 
-    ['dpDollar','dpPct','rate','term','loanType',
-     'taxRate','pmiRate','hoa','otherDebts',
-     'sqft','state','homeAge','utilOverride'].forEach(id => {
+    // Only fields not covered by [data-fmt]; clamp numeric inputs to their declared range on change
+    ['dpPct','ccPct','rate','term','loanType',
+     'taxRate','pmiRate','state','homeAge'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
-        el.addEventListener('input',  calculate);
-        el.addEventListener('change', calculate);
+        el.addEventListener('input', calculate);
+        el.addEventListener('change', () => {
+            if (el.type === 'number' && el.min !== '' && el.max !== '') {
+                const v = parseFloat(el.value);
+                if (isFinite(v)) el.value = Math.min(parseFloat(el.max), Math.max(parseFloat(el.min), v));
+            }
+            calculate();
+        });
     });
 
     // Initial render — restore saved state, format inputs, then calculate
