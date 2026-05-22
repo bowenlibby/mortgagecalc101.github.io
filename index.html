@@ -1142,18 +1142,24 @@
     function fmt(n)   { return '$' + addCommas(n); }
     function fmtR(n)  { return '$' + Math.round(n).toLocaleString('en-US'); }
 
-    // Attach comma formatting to dollar/number text inputs
+    // Live comma formatting: reformat while typing, preserving cursor position
+    function liveFormat(el) {
+        const cur = el.selectionStart;
+        const digitsLeft = el.value.substring(0, cur).replace(/[^0-9]/g, '').length;
+        const digits = el.value.replace(/[^0-9]/g, '');
+        const formatted = digits === '' ? '' : parseInt(digits, 10).toLocaleString('en-US');
+        el.value = formatted;
+        let counted = 0;
+        let newCur = formatted.length;
+        for (let i = 0; i < formatted.length; i++) {
+            if (counted === digitsLeft) { newCur = i; break; }
+            if (/[0-9]/.test(formatted[i])) counted++;
+        }
+        el.setSelectionRange(newCur, newCur);
+    }
+
     document.querySelectorAll('[data-fmt]').forEach(el => {
-        el.addEventListener('blur', () => {
-            const n = parseFloat(stripCommas(el.value));
-            if (!isNaN(n) && el.value.trim() !== '') {
-                el.value = addCommas(n);
-            }
-        });
-        el.addEventListener('focus', () => {
-            el.value = stripCommas(el.value);
-        });
-        el.addEventListener('input',  calculate);
+        el.addEventListener('input',  () => { liveFormat(el); calculate(); });
         el.addEventListener('change', calculate);
     });
 
