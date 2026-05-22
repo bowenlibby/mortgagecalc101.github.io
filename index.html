@@ -912,6 +912,15 @@
             </div>
 
             <div class="form-row">
+                <label>Other Monthly Debts <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+                <div class="input-group has-l">
+                    <span class="adorn adorn-l">$</span>
+                    <input type="text" id="otherDebts" value="0" inputmode="decimal" data-fmt="dollar">
+                </div>
+                <div class="hint">Auto/credit card/student loan payments — used for 36% back-end DTI.</div>
+            </div>
+
+            <div class="form-row">
                 <label>Maintenance Reserve</label>
                 <div class="input-group has-l">
                     <span class="adorn adorn-l">$</span>
@@ -1021,11 +1030,13 @@
                 <div class="stat-box">
                     <div class="stat-lbl">Cost Over Term</div>
                     <div class="stat-val" id="sTotalCost">—</div>
+                    <div class="hint" style="margin-top:.2rem">Principal + interest + PMI (PMI counted only for months charged).</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-lbl">Income Needed</div>
                     <div class="stat-val c-amber" id="sDTI">—</div>
-                    <div class="hint" style="margin-top:.2rem">at 28% DTI rule</div>
+                    <div class="hint" style="margin-top:.2rem">at 28% front-end DTI rule</div>
+                    <div class="hint" id="dtiNote36" style="display:none;margin-top:.2rem"></div>
                 </div>
             </div>
 
@@ -1075,7 +1086,7 @@
 
     // ── localStorage persistence ─────────────────────────────────────────────
     const LS_KEY = 'mortgageCalc_v1';
-    const TEXT_FIELDS   = ['homePrice','dpDollar','insurance','hoa','maintOverride','sqft','utilOverride'];
+    const TEXT_FIELDS   = ['homePrice','dpDollar','insurance','hoa','otherDebts','maintOverride','sqft','utilOverride'];
     const NUMBER_FIELDS = ['dpPct','rate','taxRate','pmiRate'];
     const SELECT_FIELDS = ['term','loanType','climate','homeAge'];
 
@@ -1128,7 +1139,8 @@
     function addCommas(n)   { return Math.round(n).toLocaleString('en-US'); }
 
     function val(id) {
-        return parseFloat(stripCommas(document.getElementById(id).value)) || 0;
+        const n = parseFloat(stripCommas(document.getElementById(id).value));
+        return (isNaN(n) || n < 0) ? 0 : n;
     }
     function sel(id)  { return document.getElementById(id).value; }
     function show(id) { document.getElementById(id).style.display = ''; }
@@ -1201,6 +1213,10 @@
         return Math.round((sqft * 1.50 * factor) / 12);
     }
 
+    function computePI(loan, r, n) {
+        return r === 0 ? loan / n : loan * (r * Math.pow(1+r,n)) / (Math.pow(1+r,n) - 1);
+    }
+
     // ── Main calculation ─────────────────────────────────────────────────────
     function calculate() {
         const price      = val('homePrice');
@@ -1228,9 +1244,7 @@
         // P&I
         const r = annualRate / 100 / 12;
         const n = termYrs * 12;
-        const monthlyPI = r === 0
-            ? (loan / n)
-            : loan * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        const monthlyPI = computePI(loan, r, n);
 
         const monthlyTax = (price * taxRate / 100) / 12;
         const monthlyIns = annualIns / 12;
@@ -1239,11 +1253,13 @@
         const dpPct     = price > 0 ? (dp / price) * 100 : 0;
         const pmiApplies = dpPct < 20 && loanType !== 'va';
         let monthlyPMI = 0;
+        let pmiDropMonth = null;
 
         if (pmiApplies) {
+            // Simplification: PMI held flat on original loan balance until cancellation
             monthlyPMI = (loan * pmiRate / 100) / 12;
-            const targetBal = price * 0.80;
-            let bal = loan, pmiDropMonth = null;
+            const targetBal = price * 0.78; // HPA auto-cancellation at 78% LTV
+            let bal = loan;
             for (let i = 1; i <= n; i++) {
                 const interest = bal * r;
                 bal -= (monthlyPI - interest);
@@ -1254,7 +1270,7 @@
             const dropStr = pmiDropMonth
                 ? ` Cancels ~month&nbsp;${pmiDropMonth} (year&nbsp;${Math.floor(pmiDropMonth/12)}).`
                 : ' May not cancel within this loan term.';
-            el.innerHTML = `⚠️ PMI applies &mdash; ${dpPct.toFixed(1)}% down (${(20-dpPct).toFixed(1)}% below the 20% threshold).${dropStr}`;
+            el.innerHTML = `⚠️ PMI applies &mdash; ${dpPct.toFixed(1)}% down. Auto-cancels at 78% LTV (HPA).${dropStr}`;
         } else {
             document.getElementById('pmiAlert').classList.remove('show');
         }
@@ -1320,9 +1336,21 @@
         document.getElementById('sLoan').textContent     = fmtR(loan);
         const totalInterest = Math.max(0, (monthlyPI * n) - loan);
         document.getElementById('sInterest').textContent = fmtR(totalInterest);
-        document.getElementById('sTotalCost').textContent = fmtR(total * n);
-        const pitiMonthly = monthlyPI + monthlyTax + monthlyIns;
-        document.getElementById('sDTI').textContent = fmtR(pitiMonthly / 0.28 * 12) + ' / yr';
+        const pmiMonthsCharged = pmiApplies ? (pmiDropMonth || n) : 0;
+        const totalLoanCost = (monthlyPI * n) + (monthlyPMI * pmiMonthsCharged);
+        document.getElementById('sTotalCost').textContent = fmtR(totalLoanCost);
+        const housingForDTI = monthlyPI + monthlyTax + monthlyIns + monthlyPMI + hoa;
+        const income28 = housingForDTI / 0.28 * 12;
+        document.getElementById('sDTI').textContent = fmtR(income28) + ' / yr';
+        const otherDebts = val('otherDebts');
+        const income36 = (housingForDTI + otherDebts) / 0.36 * 12;
+        const note36 = document.getElementById('dtiNote36');
+        if (otherDebts > 0) {
+            note36.textContent = `With ${fmtR(otherDebts)}/mo other debts, the 36% all-debt rule requires ${fmtR(income36)}/yr.`;
+            note36.style.display = '';
+        } else {
+            note36.style.display = 'none';
+        }
 
         // Rebuild amort if open
         if (document.getElementById('amortPanel').classList.contains('open')) {
@@ -1366,8 +1394,7 @@
             const loan    = Math.max(0, price - dp);
             const r       = val('rate') / 100 / 12;
             const n       = parseInt(sel('term')) * 12;
-            const payment = r === 0 ? loan / n
-                : loan * (r * Math.pow(1+r,n)) / (Math.pow(1+r,n) - 1);
+            const payment = computePI(loan, r, n);
             buildAmort(loan, r, n, payment);
         }
     }
@@ -1385,7 +1412,7 @@
     });
 
     ['dpDollar','dpPct','rate','term','loanType',
-     'taxRate','pmiRate','hoa',
+     'taxRate','pmiRate','hoa','otherDebts',
      'sqft','climate','homeAge','utilOverride'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
