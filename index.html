@@ -920,12 +920,24 @@
             </div>
 
             <div class="form-row">
-                <label>PMI Rate (if applicable)</label>
-                <div class="input-group has-r">
-                    <input type="number" id="pmiRate" value="0.85" min="0" max="3" step="0.05">
-                    <span class="adorn adorn-r">% / yr</span>
+                <label>PMI (if applicable)</label>
+                <div class="pills">
+                    <button class="pill" id="btnPMIDollar" onclick="setPMIMode('dollar')">$ / Month</button>
+                    <button class="pill on" id="btnPMIPct" onclick="setPMIMode('pct')">% / Year</button>
                 </div>
-                <div class="hint">Typical 0.5%–1.5% of loan. Charged until you reach 20% equity.</div>
+                <div id="pmiDollarWrap" style="display:none">
+                    <div class="input-group has-l">
+                        <span class="adorn adorn-l">$</span>
+                        <input type="text" id="pmiDollar" inputmode="decimal" data-fmt="dollar">
+                    </div>
+                </div>
+                <div id="pmiPctWrap">
+                    <div class="input-group has-r">
+                        <input type="number" id="pmiRate" value="0.85" min="0" max="3" step="0.05">
+                        <span class="adorn adorn-r">% / yr</span>
+                    </div>
+                </div>
+                <div class="hint" id="pmiHint">Typical 0.5%–1.5% of loan. Charged until you reach 20% equity.</div>
                 <div class="alert warn-alert" id="pmiAlert"></div>
             </div>
 
@@ -1179,17 +1191,18 @@
     // ── State ────────────────────────────────────────────────────────────────
     let dpMode = 'dollar';
     let ccMode = 'pct';
+    let pmiMode = 'pct';
     let insManual = false;
     let maintManual = false;
 
     // ── localStorage persistence ─────────────────────────────────────────────
     const LS_KEY = 'mortgageCalc_v1';
-    const TEXT_FIELDS   = ['homePrice','dpDollar','ccClosingDollar','insurance','hoa','otherDebts','maintOverride','sqft','utilOverride'];
+    const TEXT_FIELDS   = ['homePrice','dpDollar','ccClosingDollar','pmiDollar','insurance','hoa','otherDebts','maintOverride','sqft','utilOverride'];
     const NUMBER_FIELDS = ['dpPct','ccPct','rate','taxRate','pmiRate'];
     const SELECT_FIELDS = ['term','loanType','state','homeAge'];
 
     function saveState() {
-        const s = { dpMode, ccMode, insManual, maintManual };
+        const s = { dpMode, ccMode, pmiMode, insManual, maintManual };
         TEXT_FIELDS.concat(NUMBER_FIELDS).forEach(id => {
             const el = document.getElementById(id);
             if (el) s[id] = el.value;
@@ -1206,8 +1219,9 @@
         try { s = JSON.parse(localStorage.getItem(LS_KEY)); } catch(e) {}
         if (!s) return;
 
-        if (s.dpMode) dpMode = s.dpMode;
-        if (s.ccMode) ccMode = s.ccMode;
+        if (s.dpMode)  dpMode  = s.dpMode;
+        if (s.ccMode)  ccMode  = s.ccMode;
+        if (s.pmiMode) pmiMode = s.pmiMode;
         if (s.insManual  !== undefined) insManual  = s.insManual;
         if (s.maintManual !== undefined) maintManual = s.maintManual;
 
@@ -1238,6 +1252,14 @@
             document.getElementById('btnCCPct').classList.remove('on');
             document.getElementById('ccDollarWrap').style.display = '';
             document.getElementById('ccPctWrap').style.display = 'none';
+        }
+
+        // Restore PMI mode UI
+        if (pmiMode === 'dollar') {
+            document.getElementById('btnPMIDollar').classList.add('on');
+            document.getElementById('btnPMIPct').classList.remove('on');
+            document.getElementById('pmiDollarWrap').style.display = '';
+            document.getElementById('pmiPctWrap').style.display = 'none';
         }
     }
 
@@ -1353,6 +1375,35 @@
         calculate();
     }
 
+    // ── PMI mode ─────────────────────────────────────────────────────────────
+    function setPMIMode(mode) {
+        pmiMode = mode;
+        const price = val('homePrice');
+        const dp    = getDP();
+        const loan  = Math.max(0, price - dp);
+        if (mode === 'dollar') {
+            document.getElementById('btnPMIDollar').classList.add('on');
+            document.getElementById('btnPMIPct').classList.remove('on');
+            show('pmiDollarWrap'); hide('pmiPctWrap');
+            const monthly = loan > 0 ? Math.round((loan * val('pmiRate') / 100) / 12) : 0;
+            document.getElementById('pmiDollar').value = addCommas(monthly);
+        } else {
+            document.getElementById('btnPMIPct').classList.add('on');
+            document.getElementById('btnPMIDollar').classList.remove('on');
+            show('pmiPctWrap'); hide('pmiDollarWrap');
+            const monthly = val('pmiDollar');
+            document.getElementById('pmiRate').value = loan > 0
+                ? ((monthly * 12) / loan * 100).toFixed(2)
+                : '0.85';
+        }
+        calculate();
+    }
+
+    function getMonthlyPMI(loan) {
+        if (pmiMode === 'dollar') return val('pmiDollar');
+        return (loan * val('pmiRate') / 100) / 12;
+    }
+
     // ── Utility estimate ─────────────────────────────────────────────────────
     function estimateUtil() {
         const sqft  = val('sqft');
@@ -1376,7 +1427,6 @@
         const annualRate = val('rate');
         const termYrs    = parseInt(sel('term'));
         const taxRate    = val('taxRate');
-        const pmiRate    = val('pmiRate');
         const hoa        = val('hoa');
         const loanType   = sel('loanType');
 
@@ -1407,8 +1457,7 @@
         let pmiDropMonth = null;
 
         if (pmiApplies) {
-            // Simplification: PMI held flat on original loan balance until cancellation
-            monthlyPMI = (loan * pmiRate / 100) / 12;
+            monthlyPMI = getMonthlyPMI(loan);
             const targetBal = price * 0.78; // HPA auto-cancellation at 78% LTV
             let bal = loan;
             for (let i = 1; i <= n; i++) {
@@ -1424,6 +1473,14 @@
             el.innerHTML = `⚠️ PMI applies &mdash; ${dpPct.toFixed(1)}% down. Auto-cancels at 78% LTV (HPA).${dropStr}`;
         } else {
             document.getElementById('pmiAlert').classList.remove('show');
+        }
+
+        // PMI hint
+        if (pmiMode === 'dollar' && loan > 0) {
+            const impliedRate = (val('pmiDollar') * 12) / loan * 100;
+            document.getElementById('pmiHint').textContent = `Flat monthly premium. Implied rate: ${impliedRate.toFixed(2)}% / yr of loan.`;
+        } else {
+            document.getElementById('pmiHint').textContent = 'Typical 0.5%–1.5% of loan. Charged until you reach 20% equity.';
         }
 
         // DP hint
