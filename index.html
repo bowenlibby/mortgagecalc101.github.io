@@ -913,19 +913,11 @@
 
             <div class="form-row">
                 <label>Maintenance Reserve</label>
-                <div class="two-col">
-                    <div>
-                        <div class="auto-est" id="maintDisplay">$—</div>
-                        <div class="hint">Auto: 1% of home value ÷ 12</div>
-                    </div>
-                    <div>
-                        <div class="input-group has-l">
-                            <span class="adorn adorn-l">$</span>
-                            <input type="text" id="maintOverride" placeholder="Override" inputmode="decimal" data-fmt="dollar">
-                        </div>
-                        <div class="hint">Leave blank to use auto.</div>
-                    </div>
+                <div class="input-group has-l">
+                    <span class="adorn adorn-l">$</span>
+                    <input type="text" id="maintOverride" inputmode="decimal">
                 </div>
+                <div class="hint">Auto-calculated as 1% of home value ÷ 12 — edit to override.</div>
             </div>
         </div>
 
@@ -1079,6 +1071,7 @@
     // ── State ────────────────────────────────────────────────────────────────
     let dpMode = 'dollar';
     let insManual = false;
+    let maintManual = false;
 
     // ── localStorage persistence ─────────────────────────────────────────────
     const LS_KEY = 'mortgageCalc_v1';
@@ -1087,7 +1080,7 @@
     const SELECT_FIELDS = ['term','loanType','climate','homeAge'];
 
     function saveState() {
-        const s = { dpMode, insManual };
+        const s = { dpMode, insManual, maintManual };
         TEXT_FIELDS.concat(NUMBER_FIELDS).forEach(id => {
             const el = document.getElementById(id);
             if (el) s[id] = el.value;
@@ -1105,7 +1098,8 @@
         if (!s) return;
 
         if (s.dpMode) dpMode = s.dpMode;
-        if (s.insManual !== undefined) insManual = s.insManual;
+        if (s.insManual  !== undefined) insManual  = s.insManual;
+        if (s.maintManual !== undefined) maintManual = s.maintManual;
 
         TEXT_FIELDS.concat(NUMBER_FIELDS).forEach(id => {
             if (s[id] !== undefined) {
@@ -1226,11 +1220,10 @@
         }
         const annualIns = val('insurance');
 
-        // Maintenance reserve: auto = 1%/yr ÷ 12, override if field is filled
+        // Maintenance reserve: auto = 1%/yr ÷ 12, unless user has manually overridden
         const maintAuto = price > 0 ? Math.round(price * 0.01 / 12) : 0;
-        document.getElementById('maintDisplay').textContent = fmt(maintAuto);
-        const maintRaw = stripCommas(document.getElementById('maintOverride').value);
-        const maintenance = maintRaw ? parseFloat(maintRaw) : maintAuto;
+        if (!maintManual) document.getElementById('maintOverride').value = addCommas(maintAuto);
+        const maintenance = val('maintOverride');
 
         // P&I
         const r = annualRate / 100 / 12;
@@ -1381,13 +1374,18 @@
 
     // ── Event wiring ─────────────────────────────────────────────────────────
     document.getElementById('insurance').addEventListener('input', () => { insManual = true; calculate(); });
+    document.getElementById('maintOverride').addEventListener('input', () => {
+        maintManual = true;
+        liveFormat(document.getElementById('maintOverride'));
+        calculate();
+    });
 
     document.getElementById('homePrice').addEventListener('input', () => {
-        insManual = false; calculate();
+        insManual = false; maintManual = false; calculate();
     });
 
     ['dpDollar','dpPct','rate','term','loanType',
-     'taxRate','pmiRate','hoa','maintOverride',
+     'taxRate','pmiRate','hoa',
      'sqft','climate','homeAge','utilOverride'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
