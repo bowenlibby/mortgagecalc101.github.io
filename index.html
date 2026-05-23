@@ -232,7 +232,12 @@ input, select { font: inherit; color: inherit; }
   text-transform: uppercase;
   transition: opacity 0.18s ease;
 }
-.topbar-stick.condensed .top-meta { opacity: 0; pointer-events: none; }
+.topbar-stick.condensed .top-meta {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  visibility: hidden;
+}
 
 /* ─────────────────────────────────────────────────────────────
    HERO
