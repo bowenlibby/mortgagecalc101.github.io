@@ -977,6 +977,87 @@ tbody tr:last-child td { border-bottom: 0; }
   .input-shell input, .input-shell select { padding: 0.85rem 0.875rem; min-height: 44px; }
   .step-btn { min-height: 44px; }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   POLISH PASS — uniformity + interactivity
+   ───────────────────────────────────────────────────────────── */
+
+/* All form controls share the exact same height & padding */
+.input-shell input,
+.input-shell select,
+.auto-readout,
+.pct-stepper { min-height: 44px; }
+.input-shell input,
+.input-shell select { padding: 0.7rem 0.875rem; }
+
+/* Subtle hover on the field shell — invites interaction */
+.input-shell { transition: border-color 0.18s ease, box-shadow 0.18s ease; }
+.input-shell:hover:not(:focus-within) { border-color: var(--text-2); }
+.pct-stepper { transition: border-color 0.18s ease, box-shadow 0.18s ease; }
+.pct-stepper:hover:not(:focus-within) { border-color: var(--text-2); }
+
+/* Selects living inside input-shell match text inputs perfectly */
+.input-shell select {
+  background-color: transparent;
+  cursor: pointer;
+  padding-right: 2.25rem;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+}
+.input-shell.select-shell { cursor: pointer; }
+
+/* Auto-readout reads as "computed value" but matches input dimensions */
+.auto-readout {
+  padding: 0.7rem 0.875rem;
+  font-size: 0.9375rem;
+}
+
+/* ── Breakdown: smooth width transitions + hover sync ── */
+.seg-bar { padding: 0; overflow: visible; }
+#segBar { overflow: hidden; border-radius: 4px; height: 8px; display: flex; gap: 1px; background: var(--surface-sink); margin-bottom: 1rem; }
+#segBar .seg { transition: width 0.35s cubic-bezier(.22,.61,.36,1), opacity 0.22s ease, filter 0.22s ease; cursor: pointer; }
+#segBar .seg.cool { opacity: 0.22; }
+#segBar .seg.hot  { filter: brightness(1.12) saturate(1.08); }
+
+.line-item {
+  transition: background-color 0.18s ease, opacity 0.18s ease;
+  cursor: default;
+  border-radius: 4px;
+}
+.line-item .swatch { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.line-item.cool { opacity: 0.5; }
+.line-item.hot  { background: var(--surface-sink); }
+.line-item.hot .swatch {
+  transform: scale(1.4);
+  box-shadow: 0 0 0 3px color-mix(in oklch, currentColor 12%, transparent);
+}
+
+/* Tween-driven numbers stay rock-solid in width */
+#totalAmt, #heroTotal, #heroCash, #heroIncome,
+#kpiTotal, #kpiCash, #kpiIncome,
+#sLoan, #sInterest, #sTotalCost, #sDTI, #sCashClose,
+#totalPerYr, .li-amt, .li-pct, #utilDisplay { font-variant-numeric: tabular-nums; }
+
+/* ── Section entrance stagger (first paint only) ── */
+@keyframes section-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.left-col > .section,
+.right-col > .results {
+  animation: section-rise 0.55s cubic-bezier(.22,.61,.36,1) both;
+}
+.left-col > .section:nth-child(1) { animation-delay: 0.05s; }
+.left-col > .section:nth-child(2) { animation-delay: 0.13s; }
+.left-col > .section:nth-child(3) { animation-delay: 0.21s; }
+.right-col > .results            { animation-delay: 0.09s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .left-col > .section,
+  .right-col > .results { animation: none; }
+  #segBar .seg { transition: none; }
+}
 </style>
 </head>
 <body>
@@ -1104,12 +1185,14 @@ tbody tr:last-child td { border-bottom: 0; }
             </div>
             <div class="field">
               <div class="field-label"><label for="term">Loan term</label></div>
-              <select id="term" class="solo-input" style="border:1px solid var(--line-2); border-radius:6px; background:var(--input-bg); padding:0.7rem 0.875rem;">
-                <option value="30" selected>30 years</option>
-                <option value="20">20 years</option>
-                <option value="15">15 years</option>
-                <option value="10">10 years</option>
-              </select>
+              <div class="input-shell select-shell">
+                <select id="term">
+                  <option value="30" selected>30 years</option>
+                  <option value="20">20 years</option>
+                  <option value="15">15 years</option>
+                  <option value="10">10 years</option>
+                </select>
+              </div>
               <p class="field-help">Shorter terms cost less in interest but more per month.</p>
             </div>
           </div>
@@ -1117,12 +1200,14 @@ tbody tr:last-child td { border-bottom: 0; }
           <div class="field-row">
             <div class="field">
               <div class="field-label"><label for="loanType">Loan type</label></div>
-              <select id="loanType" class="solo-input" style="border:1px solid var(--line-2); border-radius:6px; background:var(--input-bg); padding:0.7rem 0.875rem;">
-                <option value="conventional" selected>Conventional</option>
-                <option value="fha">FHA</option>
-                <option value="va">VA (no PMI)</option>
-                <option value="usda">USDA</option>
-              </select>
+              <div class="input-shell select-shell">
+                <select id="loanType">
+                  <option value="conventional" selected>Conventional</option>
+                  <option value="fha">FHA</option>
+                  <option value="va">VA (no PMI)</option>
+                  <option value="usda">USDA</option>
+                </select>
+              </div>
               <p class="field-help">VA loans skip PMI entirely. FHA has its own MIP rules.</p>
             </div>
             <div class="field">
@@ -1287,7 +1372,8 @@ tbody tr:last-child td { border-bottom: 0; }
           <div class="field-row">
             <div class="field">
               <div class="field-label"><label for="state">State</label></div>
-              <select id="state" class="solo-input" style="border:1px solid var(--line-2); border-radius:6px; background:var(--input-bg); padding:0.7rem 0.875rem;">
+              <div class="input-shell select-shell">
+                <select id="state">
                 <option value="Alabama">Alabama</option>
                 <option value="Alaska">Alaska</option>
                 <option value="Arizona">Arizona</option>
@@ -1340,17 +1426,20 @@ tbody tr:last-child td { border-bottom: 0; }
                 <option value="Wisconsin">Wisconsin</option>
                 <option value="Wyoming">Wyoming</option>
               </select>
+              </div>
               <p class="field-help">Rates differ wildly — Utah ≈ $205/mo, West Virginia ≈ $390/mo.</p>
             </div>
             <div class="field">
               <div class="field-label"><label for="homeAge">Home age</label></div>
-              <select id="homeAge" class="solo-input" style="border:1px solid var(--line-2); border-radius:6px; background:var(--input-bg); padding:0.7rem 0.875rem;">
-                <option value="new">New (2010+)</option>
-                <option value="recent">Recent (2000–2009)</option>
-                <option value="modern">Modern (1980–1999)</option>
-                <option value="older" selected>Older (1950–1979)</option>
-                <option value="old">Old (pre-1950)</option>
-              </select>
+              <div class="input-shell select-shell">
+                <select id="homeAge">
+                  <option value="new">New (2010+)</option>
+                  <option value="recent">Recent (2000–2009)</option>
+                  <option value="modern">Modern (1980–1999)</option>
+                  <option value="older" selected>Older (1950–1979)</option>
+                  <option value="old">Old (pre-1950)</option>
+                </select>
+              </div>
               <p class="field-help">Older homes lose more heat — the multiplier matters.</p>
             </div>
           </div>
@@ -1767,6 +1856,128 @@ tbody tr:last-child td { border-bottom: 0; }
         return totalInt;
     }
 
+    // ── Tween-driven number animation ─────────────────────────────
+    // Smoothly count from the current displayed value to the new target.
+    // Cancels in-flight tween if a newer value arrives so it never feels jittery.
+    const __tweens = new WeakMap();
+    const FIRST_PAINT_MS = 750; // initial count-up is a bit longer for delight
+    const TWEEN_MS       = 380;
+    function tweenNum(el, target, formatter) {
+        if (!el || !isFinite(target)) return;
+        const prevDisplayed = parseFloat(el.dataset.tv);
+        const isFirstPaint  = !isFinite(prevDisplayed);
+        const start         = isFirstPaint ? 0 : prevDisplayed;
+        const duration      = isFirstPaint ? FIRST_PAINT_MS : TWEEN_MS;
+
+        if (Math.abs(start - target) < 0.5) {
+            el.textContent = formatter(target);
+            el.dataset.tv  = String(target);
+            return;
+        }
+        const prevRAF = __tweens.get(el);
+        if (prevRAF) cancelAnimationFrame(prevRAF);
+        const startT = performance.now();
+        function step(now) {
+            const p     = Math.min(1, (now - startT) / duration);
+            const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+            const v     = start + (target - start) * eased;
+            el.textContent = formatter(v);
+            el.dataset.tv  = String(v);
+            if (p < 1) {
+                __tweens.set(el, requestAnimationFrame(step));
+            } else {
+                el.textContent = formatter(target);
+                el.dataset.tv  = String(target);
+                __tweens.delete(el);
+            }
+        }
+        __tweens.set(el, requestAnimationFrame(step));
+    }
+
+    // ── Stable-DOM breakdown render ───────────────────────────────
+    // Instead of innerHTML-replacing the bar + line items every recalc,
+    // we keep a map of DOM nodes keyed by line-item label. Widths transition
+    // smoothly via CSS, numbers tween, and items reorder via `order` instead
+    // of being destroyed. This is what gives the bar its "alive" feel.
+    const breakdownNodes = {}; // { [label]: { seg, li, amtEl, pctEl } }
+
+    function renderBreakdown(items, total) {
+        const segBar    = document.getElementById('segBar');
+        const lineItems = document.getElementById('lineItems');
+        const seenKeys  = new Set(items.map(i => i.label));
+
+        // Remove items that no longer apply (e.g. PMI dropped off)
+        Object.keys(breakdownNodes).forEach(key => {
+            if (!seenKeys.has(key)) {
+                breakdownNodes[key].seg.remove();
+                breakdownNodes[key].li.remove();
+                delete breakdownNodes[key];
+            }
+        });
+
+        items.forEach((item, idx) => {
+            let node = breakdownNodes[item.label];
+            if (!node) {
+                // Create new seg + line item
+                const seg = document.createElement('div');
+                seg.className = 'seg';
+                seg.style.background = item.color;
+                seg.dataset.li = item.label;
+                seg.title = item.label;
+                segBar.appendChild(seg);
+
+                const li = document.createElement('div');
+                li.className = 'line-item';
+                li.dataset.li = item.label;
+                li.innerHTML = `
+                    <div class="swatch" style="background:${item.color};color:${item.color}"></div>
+                    <div class="li-label"></div>
+                    <div class="li-amt" data-tv="0">$0</div>
+                    <div class="li-pct">0%</div>
+                `;
+                li.querySelector('.li-label').textContent = item.label;
+                lineItems.appendChild(li);
+
+                node = breakdownNodes[item.label] = {
+                    seg,
+                    li,
+                    amtEl: li.querySelector('.li-amt'),
+                    pctEl: li.querySelector('.li-pct'),
+                };
+            }
+
+            const pct = total > 0 ? (item.value / total * 100) : 0;
+            node.seg.style.width = pct.toFixed(2) + '%';
+            node.seg.style.order = idx;
+            node.li.style.order  = idx;
+            tweenNum(node.amtEl, item.value, fmt);
+            node.pctEl.textContent = pct.toFixed(0) + '%';
+        });
+    }
+
+    // ── Bar ↔ Line-item hover bridge ──────────────────────────────
+    function highlightLineItem(key) {
+        const allKeys = Object.keys(breakdownNodes);
+        allKeys.forEach(k => {
+            const n = breakdownNodes[k];
+            const isMatch = k === key;
+            n.seg.classList.toggle('hot',  isMatch);
+            n.seg.classList.toggle('cool', key !== null && !isMatch);
+            n.li.classList.toggle('hot',   isMatch);
+            n.li.classList.toggle('cool',  key !== null && !isMatch);
+        });
+    }
+    document.getElementById('segBar').addEventListener('mouseover', e => {
+        const seg = e.target.closest('.seg');
+        if (seg) highlightLineItem(seg.dataset.li);
+    });
+    document.getElementById('segBar').addEventListener('mouseleave', () => highlightLineItem(null));
+    document.getElementById('lineItems').addEventListener('mouseover', e => {
+        const li = e.target.closest('.line-item');
+        if (li) highlightLineItem(li.dataset.li);
+    });
+    document.getElementById('lineItems').addEventListener('mouseleave', () => highlightLineItem(null));
+
     function calculate() {
         const price      = val('homePrice');
         const dp         = getDP();
@@ -1845,7 +2056,7 @@ tbody tr:last-child td { border-bottom: 0; }
             : `${fmtR(closing)} closing costs`;
 
         const utilEst      = estimateUtil();
-        document.getElementById('utilDisplay').textContent = fmt(utilEst);
+        tweenNum(document.getElementById('utilDisplay'), utilEst, fmt);
         const utilRaw      = stripCommas(document.getElementById('utilOverride').value);
         const parsedUtil   = parseFloat(utilRaw);
         const monthlyUtil  = utilRaw && isFinite(parsedUtil) ? parsedUtil : utilEst;
@@ -1870,42 +2081,37 @@ tbody tr:last-child td { border-bottom: 0; }
             monthlyUtil > 0     && { label: 'Utilities (est.)',  value: monthlyUtil, color: C.utilities },
         ].filter(Boolean).sort((a, b) => b.value - a.value);
 
-        document.getElementById('totalAmt').textContent    = fmt(total);
-        document.getElementById('totalSub').textContent    = itemDefs.map(i => i.label).join(' + ');
-        document.getElementById('totalPerYr').textContent  = fmtR(total * 12) + ' / year';
+        // Formatters (closures keep fmt/fmtR signatures compatible w/ tween)
+        const fmtMo = v => fmt(v) + ' / mo';
+        const fmtYr = v => fmtR(v) + ' / yr';
+        const fmtPerYear = v => fmtR(v) + ' / year';
+
+        tweenNum(document.getElementById('totalAmt'),   total, fmt);
+        document.getElementById('totalSub').textContent = itemDefs.map(i => i.label).join(' + ');
+        tweenNum(document.getElementById('totalPerYr'), total * 12, fmtPerYear);
 
         // Hero strip
-        document.getElementById('heroTotal').textContent = fmt(total) + ' / mo';
-        document.getElementById('heroCash').textContent  = fmtR(cashClose);
+        tweenNum(document.getElementById('heroTotal'), total, fmtMo);
+        tweenNum(document.getElementById('heroCash'),  cashClose, fmtR);
 
-        // Sticky topbar KPIs (mirror the hero values, compact form)
-        document.getElementById('kpiTotal').textContent = fmt(total);
-        document.getElementById('kpiCash').textContent  = fmtR(cashClose);
+        // Sticky topbar KPIs
+        tweenNum(document.getElementById('kpiTotal'), total, fmt);
+        tweenNum(document.getElementById('kpiCash'),  cashClose, fmtR);
 
-        document.getElementById('segBar').innerHTML = total > 0 ? itemDefs.map((i, idx) => {
-            return `<div class="seg" style="width:${(i.value/total*100).toFixed(2)}%;background:${i.color}"></div>`;
-        }).join('') : '';
+        // Stable-DOM breakdown render (smooth widths, tweened amounts)
+        renderBreakdown(itemDefs, total);
 
-        document.getElementById('lineItems').innerHTML = itemDefs.map(i => `
-            <div class="line-item">
-                <div class="swatch" style="background:${i.color}"></div>
-                <div class="li-label">${i.label}</div>
-                <div class="li-amt">${fmt(i.value)}</div>
-                <div class="li-pct">${total > 0 ? (i.value/total*100).toFixed(0) : '0'}%</div>
-            </div>
-        `).join('');
-
-        document.getElementById('sLoan').textContent     = fmtR(loan);
+        tweenNum(document.getElementById('sLoan'), loan, fmtR);
         const totalInterest = computeTotalInterest(loan, r, n, monthlyPI);
-        document.getElementById('sInterest').textContent = fmtR(totalInterest);
+        tweenNum(document.getElementById('sInterest'), totalInterest, fmtR);
         const pmiMonthsCharged = pmiApplies ? (pmiDropMonth || n) : 0;
         const totalLoanCost = (monthlyPI * n) + (monthlyPMI * pmiMonthsCharged);
-        document.getElementById('sTotalCost').textContent = fmtR(totalLoanCost);
+        tweenNum(document.getElementById('sTotalCost'), totalLoanCost, fmtR);
         const housingForDTI = monthlyPI + monthlyTax + monthlyIns + monthlyPMI + hoa;
         const income28 = housingForDTI / 0.28 * 12;
-        document.getElementById('sDTI').textContent = fmtR(income28) + ' / yr';
-        document.getElementById('heroIncome').textContent = fmtR(income28) + ' / yr';
-        document.getElementById('kpiIncome').textContent  = fmtR(income28);
+        tweenNum(document.getElementById('sDTI'),       income28, fmtYr);
+        tweenNum(document.getElementById('heroIncome'), income28, fmtYr);
+        tweenNum(document.getElementById('kpiIncome'),  income28, fmtR);
         const otherDebts = val('otherDebts');
         const income36 = (housingForDTI + otherDebts) / 0.36 * 12;
         const note36 = document.getElementById('dtiNote36');
@@ -1916,7 +2122,7 @@ tbody tr:last-child td { border-bottom: 0; }
             note36.style.display = 'none';
         }
 
-        document.getElementById('sCashClose').textContent    = fmtR(cashClose);
+        tweenNum(document.getElementById('sCashClose'), cashClose, fmtR);
         document.getElementById('cashCloseNote').textContent = `${fmtR(dp)} down + ${fmtR(closing)} closing`;
 
         if (document.getElementById('amortPanel').classList.contains('open')) {
