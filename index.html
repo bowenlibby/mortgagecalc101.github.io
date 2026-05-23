@@ -96,13 +96,33 @@ input, select { font: inherit; color: inherit; }
 /* ─────────────────────────────────────────────────────────────
    TOP BAR
    ───────────────────────────────────────────────────────────── */
+.topbar-stick {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.25s ease, border-color 0.25s ease, backdrop-filter 0.25s ease;
+}
+.topbar-stick.condensed {
+  background-color: color-mix(in oklab, var(--bg) 82%, transparent);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom-color: var(--rule);
+}
+
 .topbar {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 1.5rem 1.75rem 0;
-  display: flex;
+  padding: 1.5rem 1.75rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1.5rem;
   align-items: center;
-  justify-content: space-between;
+  transition: padding 0.22s ease;
+}
+.topbar-stick.condensed .topbar {
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
 }
 
 .brand {
@@ -114,7 +134,9 @@ input, select { font: inherit; color: inherit; }
   font-size: 1.375rem;
   letter-spacing: -0.01em;
   color: var(--text);
+  transition: font-size 0.22s ease;
 }
+.topbar-stick.condensed .brand { font-size: 1.125rem; }
 
 .brand-mark {
   width: 28px; height: 28px;
@@ -127,9 +149,64 @@ input, select { font: inherit; color: inherit; }
   font-size: 13px;
   border-radius: 2px;
   letter-spacing: -0.02em;
+  transition: width 0.22s ease, height 0.22s ease;
+}
+.topbar-stick.condensed .brand-mark { width: 24px; height: 24px; font-size: 11px; }
+
+/* KPI strip — visible only when condensed */
+.kpi-strip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  min-width: 0;
+}
+.topbar-stick.condensed .kpi-strip {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  min-width: 0;
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--rule);
+}
+.kpi:first-child { padding-left: 0; border-left: 0; }
+.kpi-k {
+  font-family: 'Geist Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1;
+  white-space: nowrap;
+}
+.kpi-v {
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.kpi-v .per {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-left: 0.15rem;
+  letter-spacing: 0.05em;
 }
 
-.top-right { display: flex; align-items: center; gap: 0.75rem; }
+.top-right { display: flex; align-items: center; gap: 0.75rem; justify-self: end; }
 
 .theme-toggle {
   display: inline-flex;
@@ -153,7 +230,9 @@ input, select { font: inherit; color: inherit; }
   letter-spacing: 0.04em;
   color: var(--muted);
   text-transform: uppercase;
+  transition: opacity 0.18s ease;
 }
+.topbar-stick.condensed .top-meta { opacity: 0; pointer-events: none; }
 
 /* ─────────────────────────────────────────────────────────────
    HERO
@@ -569,7 +648,7 @@ select {
    ───────────────────────────────────────────────────────────── */
 .results {
   position: sticky;
-  top: 1.5rem;
+  top: 80px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -832,6 +911,12 @@ tbody tr:last-child td { border-bottom: 0; }
   color: var(--text-2);
 }
 
+/* Mid-size: drop the secondary KPIs, keep the all-in monthly */
+@media (max-width: 860px) {
+  .kpi-hide-md { display: none; }
+  .topbar { gap: 1rem; }
+}
+
 /* JS injected inline "No PMI" success text in dpHint needs to inherit theme */
 #dpHint strong[style] { color: var(--pos) !important; }
 
@@ -856,17 +941,33 @@ tbody tr:last-child td { border-bottom: 0; }
 <body>
 
 <!-- ═══ TOP BAR ════════════════════════════════════════════════════════ -->
-<div class="topbar">
-  <div class="brand">
-    <div class="brand-mark">$</div>
-    <span>Mortgage Calculator</span>
-  </div>
-  <div class="top-right">
-    <span class="top-meta">est. monthly · all-in</span>
-    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme">
-      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-      <span id="themeLabel">Light</span>
-    </button>
+<div class="topbar-stick" id="topbarStick">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">$</div>
+      <span>Mortgage Calculator</span>
+    </div>
+    <div class="kpi-strip" id="kpiStrip" aria-hidden="true">
+      <div class="kpi">
+        <span class="kpi-k">All-in monthly</span>
+        <span class="kpi-v"><span id="kpiTotal">$—</span><span class="per">/mo</span></span>
+      </div>
+      <div class="kpi kpi-hide-md">
+        <span class="kpi-k">Cash to close</span>
+        <span class="kpi-v" id="kpiCash">$—</span>
+      </div>
+      <div class="kpi kpi-hide-md">
+        <span class="kpi-k">Income needed</span>
+        <span class="kpi-v"><span id="kpiIncome">$—</span><span class="per">/yr</span></span>
+      </div>
+    </div>
+    <div class="top-right">
+      <span class="top-meta">est. monthly · all-in</span>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <span id="themeLabel">Light</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -874,7 +975,7 @@ tbody tr:last-child td { border-bottom: 0; }
 <section class="hero">
   <div class="hero-inner">
     <div>
-      <span class="eyebrow">For first-time buyers</span>
+      <span class="eyebrow">All-in monthly cost</span>
       <h1>The honest cost of <em>owning a home,</em> not just borrowing for one.</h1>
       <p class="hero-lede">Most calculators show you principal and interest. This one adds taxes, insurance, PMI, utilities, and maintenance — the line items that turn a "comfortable" payment into a stretch.</p>
     </div>
@@ -1715,6 +1816,10 @@ tbody tr:last-child td { border-bottom: 0; }
         document.getElementById('heroTotal').textContent = fmt(total) + ' / mo';
         document.getElementById('heroCash').textContent  = fmtR(cashClose);
 
+        // Sticky topbar KPIs (mirror the hero values, compact form)
+        document.getElementById('kpiTotal').textContent = fmt(total);
+        document.getElementById('kpiCash').textContent  = fmtR(cashClose);
+
         document.getElementById('segBar').innerHTML = total > 0 ? itemDefs.map((i, idx) => {
             return `<div class="seg" style="width:${(i.value/total*100).toFixed(2)}%;background:${i.color}"></div>`;
         }).join('') : '';
@@ -1738,6 +1843,7 @@ tbody tr:last-child td { border-bottom: 0; }
         const income28 = housingForDTI / 0.28 * 12;
         document.getElementById('sDTI').textContent = fmtR(income28) + ' / yr';
         document.getElementById('heroIncome').textContent = fmtR(income28) + ' / yr';
+        document.getElementById('kpiIncome').textContent  = fmtR(income28);
         const otherDebts = val('otherDebts');
         const income36 = (housingForDTI + otherDebts) / 0.36 * 12;
         const note36 = document.getElementById('dtiNote36');
@@ -1826,6 +1932,22 @@ tbody tr:last-child td { border-bottom: 0; }
         if (!isNaN(n) && el.value.trim() !== '') el.value = addCommas(n);
     });
     calculate();
+
+    // ── Sticky topbar: condense when hero scrolls past ─────────────
+    (function() {
+        const heroEl = document.querySelector('.hero');
+        const stick  = document.getElementById('topbarStick');
+        const strip  = document.getElementById('kpiStrip');
+        if (!heroEl || !stick) return;
+
+        const io = new IntersectionObserver(([entry]) => {
+            const condensed = !entry.isIntersecting;
+            stick.classList.toggle('condensed', condensed);
+            strip.setAttribute('aria-hidden', condensed ? 'false' : 'true');
+        }, { rootMargin: '-56px 0px 0px 0px', threshold: 0 });
+
+        io.observe(heroEl);
+    })();
 </script>
 
 </body>
