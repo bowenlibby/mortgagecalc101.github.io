@@ -760,7 +760,7 @@ select {
 .line-items { display: flex; flex-direction: column; gap: 0.125rem; }
 .line-item {
   display: grid;
-  grid-template-columns: 12px 1fr auto auto;
+  grid-template-columns: 16px 1fr auto auto;
   align-items: center;
   gap: 0.625rem;
   padding: 0.4rem 0;
@@ -1025,13 +1025,15 @@ tbody tr:last-child td { border-bottom: 0; }
   cursor: default;
   border-radius: 4px;
 }
-.line-item .swatch { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.line-item .swatch {
+  transition: transform 0.2s ease;
+  transform-origin: center center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
 .line-item.cool { opacity: 0.5; }
 .line-item.hot  { background: var(--surface-sink); }
-.line-item.hot .swatch {
-  transform: scale(1.4);
-  box-shadow: 0 0 0 3px color-mix(in oklch, currentColor 12%, transparent);
-}
+.line-item.hot .swatch { transform: scale(1.4); }
 
 /* Tween-driven numbers stay rock-solid in width */
 #totalAmt, #heroTotal, #heroCash, #heroIncome,
@@ -1930,7 +1932,7 @@ tbody tr:last-child td { border-bottom: 0; }
                 li.className = 'line-item';
                 li.dataset.li = item.label;
                 li.innerHTML = `
-                    <div class="swatch" style="background:${item.color};color:${item.color}"></div>
+                    <div class="swatch" style="background:${item.color}"></div>
                     <div class="li-label"></div>
                     <div class="li-amt" data-tv="0">$0</div>
                     <div class="li-pct">0%</div>
