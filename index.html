@@ -993,11 +993,11 @@ tbody tr:last-child td { border-bottom: 0; }
         <span class="kpi-k">All-in monthly</span>
         <span class="kpi-v"><span id="kpiTotal">$—</span><span class="per">/mo</span></span>
       </div>
-      <div class="kpi kpi-hide-md">
+      <div class="kpi">
         <span class="kpi-k">Cash to close</span>
         <span class="kpi-v" id="kpiCash">$—</span>
       </div>
-      <div class="kpi kpi-hide-md">
+      <div class="kpi">
         <span class="kpi-k">Income needed</span>
         <span class="kpi-v"><span id="kpiIncome">$—</span><span class="per">/yr</span></span>
       </div>
@@ -1070,8 +1070,8 @@ tbody tr:last-child td { border-bottom: 0; }
             <div class="field-label">
               <label>Down payment</label>
               <div class="segmented" role="tablist">
-                <button class="pill on" id="btnDollar" type="button" onclick="setDPMode('dollar')">$</button>
-                <button class="pill" id="btnPct" type="button" onclick="setDPMode('pct')">%</button>
+                <button class="pill on" id="btnDollar" type="button" role="tab" aria-selected="true" onclick="setDPMode('dollar')">$</button>
+                <button class="pill" id="btnPct" type="button" role="tab" aria-selected="false" onclick="setDPMode('pct')">%</button>
               </div>
             </div>
             <div id="dpDollarWrap">
@@ -1129,8 +1129,8 @@ tbody tr:last-child td { border-bottom: 0; }
               <div class="field-label">
                 <label>Closing costs</label>
                 <div class="segmented" role="tablist">
-                  <button class="pill" id="btnCCDollar" type="button" onclick="setCCMode('dollar')">$</button>
-                  <button class="pill on" id="btnCCPct" type="button" onclick="setCCMode('pct')">%</button>
+                  <button class="pill" id="btnCCDollar" type="button" role="tab" aria-selected="false" onclick="setCCMode('dollar')">$</button>
+                  <button class="pill on" id="btnCCPct" type="button" role="tab" aria-selected="true" onclick="setCCMode('pct')">%</button>
                 </div>
               </div>
               <div id="ccDollarWrap" style="display:none">
@@ -1195,8 +1195,8 @@ tbody tr:last-child td { border-bottom: 0; }
             <div class="field-label">
               <label>PMI</label>
               <div class="segmented" role="tablist">
-                <button class="pill" id="btnPMIDollar" type="button" onclick="setPMIMode('dollar')">$ / mo</button>
-                <button class="pill on" id="btnPMIPct" type="button" onclick="setPMIMode('pct')">% / yr</button>
+                <button class="pill" id="btnPMIDollar" type="button" role="tab" aria-selected="false" onclick="setPMIMode('dollar')">$ / mo</button>
+                <button class="pill on" id="btnPMIPct" type="button" role="tab" aria-selected="true" onclick="setPMIMode('pct')">% / yr</button>
               </div>
             </div>
             <div id="pmiDollarWrap" style="display:none">
@@ -1384,7 +1384,7 @@ tbody tr:last-child td { border-bottom: 0; }
         <span class="results-tag">live · all-in</span>
       </div>
 
-      <div class="total-hero">
+      <div class="total-hero" aria-live="polite">
         <div class="total-eyebrow">Estimated monthly total</div>
         <div class="total-amount">
           <span id="totalAmt">$—</span>
@@ -1563,19 +1563,25 @@ tbody tr:last-child td { border-bottom: 0; }
 
         if (dpMode === 'pct') {
             document.getElementById('btnPct').classList.add('on');
+            document.getElementById('btnPct').setAttribute('aria-selected', 'true');
             document.getElementById('btnDollar').classList.remove('on');
+            document.getElementById('btnDollar').setAttribute('aria-selected', 'false');
             document.getElementById('dpDollarWrap').style.display = 'none';
             document.getElementById('dpPctWrap').style.display = '';
         }
         if (ccMode === 'dollar') {
             document.getElementById('btnCCDollar').classList.add('on');
+            document.getElementById('btnCCDollar').setAttribute('aria-selected', 'true');
             document.getElementById('btnCCPct').classList.remove('on');
+            document.getElementById('btnCCPct').setAttribute('aria-selected', 'false');
             document.getElementById('ccDollarWrap').style.display = '';
             document.getElementById('ccPctWrap').style.display = 'none';
         }
         if (pmiMode === 'dollar') {
             document.getElementById('btnPMIDollar').classList.add('on');
+            document.getElementById('btnPMIDollar').setAttribute('aria-selected', 'true');
             document.getElementById('btnPMIPct').classList.remove('on');
+            document.getElementById('btnPMIPct').setAttribute('aria-selected', 'false');
             document.getElementById('pmiDollarWrap').style.display = '';
             document.getElementById('pmiPctWrap').style.display = 'none';
         }
@@ -1635,13 +1641,17 @@ tbody tr:last-child td { border-bottom: 0; }
         const price = val('homePrice');
         if (mode === 'dollar') {
             document.getElementById('btnDollar').classList.add('on');
+            document.getElementById('btnDollar').setAttribute('aria-selected', 'true');
             document.getElementById('btnPct').classList.remove('on');
+            document.getElementById('btnPct').setAttribute('aria-selected', 'false');
             show('dpDollarWrap'); hide('dpPctWrap');
             const pct = val('dpPct');
             document.getElementById('dpDollar').value = addCommas(Math.round(price * pct / 100));
         } else {
             document.getElementById('btnPct').classList.add('on');
+            document.getElementById('btnPct').setAttribute('aria-selected', 'true');
             document.getElementById('btnDollar').classList.remove('on');
+            document.getElementById('btnDollar').setAttribute('aria-selected', 'false');
             hide('dpDollarWrap'); show('dpPctWrap');
             const dp = parseFloat(stripCommas(document.getElementById('dpDollar').value)) || 0;
             document.getElementById('dpPct').value = price > 0 ? ((dp / price) * 100).toFixed(1) : '20';
@@ -1675,12 +1685,16 @@ tbody tr:last-child td { border-bottom: 0; }
         const price = val('homePrice');
         if (mode === 'dollar') {
             document.getElementById('btnCCDollar').classList.add('on');
+            document.getElementById('btnCCDollar').setAttribute('aria-selected', 'true');
             document.getElementById('btnCCPct').classList.remove('on');
+            document.getElementById('btnCCPct').setAttribute('aria-selected', 'false');
             show('ccDollarWrap'); hide('ccPctWrap');
             document.getElementById('ccClosingDollar').value = addCommas(Math.round(price * val('ccPct') / 100));
         } else {
             document.getElementById('btnCCPct').classList.add('on');
+            document.getElementById('btnCCPct').setAttribute('aria-selected', 'true');
             document.getElementById('btnCCDollar').classList.remove('on');
+            document.getElementById('btnCCDollar').setAttribute('aria-selected', 'false');
             show('ccPctWrap'); hide('ccDollarWrap');
             const cc = parseFloat(stripCommas(document.getElementById('ccClosingDollar').value)) || 0;
             document.getElementById('ccPct').value = price > 0 ? ((cc / price) * 100).toFixed(2) : '3';
@@ -1704,13 +1718,17 @@ tbody tr:last-child td { border-bottom: 0; }
         const loan  = Math.max(0, price - dp);
         if (mode === 'dollar') {
             document.getElementById('btnPMIDollar').classList.add('on');
+            document.getElementById('btnPMIDollar').setAttribute('aria-selected', 'true');
             document.getElementById('btnPMIPct').classList.remove('on');
+            document.getElementById('btnPMIPct').setAttribute('aria-selected', 'false');
             show('pmiDollarWrap'); hide('pmiPctWrap');
             const monthly = loan > 0 ? Math.round((loan * val('pmiRate') / 100) / 12) : 0;
             document.getElementById('pmiDollar').value = addCommas(monthly);
         } else {
             document.getElementById('btnPMIPct').classList.add('on');
+            document.getElementById('btnPMIPct').setAttribute('aria-selected', 'true');
             document.getElementById('btnPMIDollar').classList.remove('on');
+            document.getElementById('btnPMIDollar').setAttribute('aria-selected', 'false');
             show('pmiPctWrap'); hide('pmiDollarWrap');
             const monthly = val('pmiDollar');
             document.getElementById('pmiRate').value = loan > 0
@@ -1811,12 +1829,15 @@ tbody tr:last-child td { border-bottom: 0; }
         }
 
         const hint = document.getElementById('dpHint');
-        hint.innerHTML = dpMode === 'dollar'
-            ? `${dpPct.toFixed(1)}% of home price`
-            : `${fmtR(dp)} down payment`;
-
-        if (dpPct >= 20)      hint.innerHTML += ' &mdash; <strong>No PMI required ✓</strong>';
-        else if (loanType === 'va') hint.innerHTML += ' &mdash; <strong>VA loan: no PMI ✓</strong>';
+        if (price > 0 && dp > price) {
+            hint.textContent = 'Down payment exceeds home price';
+        } else {
+            hint.innerHTML = dpMode === 'dollar'
+                ? `${dpPct.toFixed(1)}% of home price`
+                : `${fmtR(dp)} down payment`;
+            if (dpPct >= 20)           hint.innerHTML += ' &mdash; <strong>No PMI required ✓</strong>';
+            else if (loanType === 'va') hint.innerHTML += ' &mdash; <strong>VA loan: no PMI ✓</strong>';
+        }
 
         const ccPctOfPrice = price > 0 ? (closing / price * 100) : 0;
         document.getElementById('ccHint').innerHTML = ccMode === 'dollar'
@@ -1936,7 +1957,7 @@ tbody tr:last-child td { border-bottom: 0; }
             const price   = val('homePrice');
             const dp      = getDP();
             const loan    = Math.max(0, price - dp);
-            const r       = val('rate') / 100 / 12;
+            const r       = clampedVal('rate') / 100 / 12;
             const n       = parseInt(sel('term'), 10) * 12;
             const payment = computePI(loan, r, n);
             buildAmort(loan, r, n, payment);
