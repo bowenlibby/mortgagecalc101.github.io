@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mortgage Calculator</title>
+<meta name="description" content="All-in monthly mortgage calculator — principal, interest, taxes, insurance, PMI, utilities, and maintenance, plus cash to close and income needed.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23b65a32'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' fill='%23fff' text-anchor='middle'%3E$%3C/text%3E%3C/svg%3E">
+
+<script>
+// Apply saved/OS theme before first paint to avoid a light-mode flash
+(function() {
+  let t = null;
+  try { t = localStorage.getItem('mortgageCalc_theme'); } catch(e) {}
+  document.documentElement.setAttribute('data-theme',
+    t || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+})();
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -68,6 +80,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { color-scheme: light dark; }
+html[data-theme="light"] { color-scheme: light; }
 html[data-theme="dark"] { color-scheme: dark; }
 
 body {
@@ -428,7 +441,8 @@ main {
   justify-content: space-between;
   gap: 0.5rem;
 }
-.field-label label {
+.field-label label,
+.field-label .flabel {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text);
@@ -958,8 +972,16 @@ tbody tr:last-child td { border-bottom: 0; }
   .topbar-stick.condensed .kpi-v .per { font-size: 0.55rem; }
 }
 
-/* JS injected inline "No PMI" success text in dpHint needs to inherit theme */
-#dpHint strong[style] { color: var(--pos) !important; }
+/* Visually hidden but announced by screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* Small screens */
 @media (max-width: 640px) {
@@ -1014,7 +1036,6 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 
 /* ── Breakdown: smooth width transitions + hover sync ── */
-.seg-bar { padding: 0; overflow: visible; }
 #segBar { overflow: hidden; border-radius: 4px; height: 8px; display: flex; gap: 1px; background: var(--surface-sink); margin-bottom: 1rem; }
 #segBar .seg { transition: width 0.35s cubic-bezier(.22,.61,.36,1), opacity 0.22s ease, filter 0.22s ease; cursor: pointer; }
 #segBar .seg.cool { opacity: 0.22; }
@@ -1144,30 +1165,30 @@ tbody tr:last-child td { border-bottom: 0; }
             <div class="field-label"><label for="homePrice">Home price</label></div>
             <div class="input-shell">
               <span class="adorn">$</span>
-              <input type="text" id="homePrice" value="450,000" inputmode="decimal" data-fmt="dollar">
+              <input type="text" id="homePrice" value="450,000" inputmode="numeric" data-fmt="dollar">
             </div>
             <p class="field-help">The agreed purchase price — what shows up on the contract.</p>
           </div>
 
           <div class="field">
             <div class="field-label">
-              <label>Down payment</label>
-              <div class="segmented" role="tablist">
-                <button class="pill on" id="btnDollar" type="button" role="tab" aria-selected="true" onclick="setDPMode('dollar')">$</button>
-                <button class="pill" id="btnPct" type="button" role="tab" aria-selected="false" onclick="setDPMode('pct')">%</button>
+              <span class="flabel" id="dpLabel">Down payment</span>
+              <div class="segmented" role="group">
+                <button class="pill on" id="btnDollar" type="button" aria-pressed="true" onclick="setDPMode('dollar')">$</button>
+                <button class="pill" id="btnPct" type="button" aria-pressed="false" onclick="setDPMode('pct')">%</button>
               </div>
             </div>
             <div id="dpDollarWrap">
               <div class="input-shell">
                 <span class="adorn">$</span>
-                <input type="text" id="dpDollar" value="90,000" inputmode="decimal" data-fmt="dollar">
+                <input type="text" id="dpDollar" value="90,000" aria-labelledby="dpLabel" inputmode="numeric" data-fmt="dollar">
               </div>
             </div>
             <div id="dpPctWrap" style="display:none">
               <div class="pct-stepper">
                 <button class="step-btn step-l" type="button" onclick="stepPct(-0.5)" aria-label="Decrease">−</button>
                 <div class="step-mid">
-                  <input type="number" id="dpPct" value="20" min="0" max="100" step="0.5">
+                  <input type="number" id="dpPct" aria-labelledby="dpLabel" value="20" min="0" max="100" step="0.5">
                   <span class="step-sym">%</span>
                 </div>
                 <button class="step-btn step-r" type="button" onclick="stepPct(0.5)" aria-label="Increase">+</button>
@@ -1214,23 +1235,23 @@ tbody tr:last-child td { border-bottom: 0; }
             </div>
             <div class="field">
               <div class="field-label">
-                <label>Closing costs</label>
-                <div class="segmented" role="tablist">
-                  <button class="pill" id="btnCCDollar" type="button" role="tab" aria-selected="false" onclick="setCCMode('dollar')">$</button>
-                  <button class="pill on" id="btnCCPct" type="button" role="tab" aria-selected="true" onclick="setCCMode('pct')">%</button>
+                <span class="flabel" id="ccLabel">Closing costs</span>
+                <div class="segmented" role="group">
+                  <button class="pill" id="btnCCDollar" type="button" aria-pressed="false" onclick="setCCMode('dollar')">$</button>
+                  <button class="pill on" id="btnCCPct" type="button" aria-pressed="true" onclick="setCCMode('pct')">%</button>
                 </div>
               </div>
               <div id="ccDollarWrap" style="display:none">
                 <div class="input-shell">
                   <span class="adorn">$</span>
-                  <input type="text" id="ccClosingDollar" inputmode="decimal" data-fmt="dollar">
+                  <input type="text" id="ccClosingDollar" aria-labelledby="ccLabel" inputmode="numeric" data-fmt="dollar">
                 </div>
               </div>
               <div id="ccPctWrap">
                 <div class="pct-stepper">
                   <button class="step-btn step-l" type="button" onclick="stepCCPct(-0.25)" aria-label="Decrease">−</button>
                   <div class="step-mid">
-                    <input type="number" id="ccPct" value="3" min="0" max="15" step="0.25">
+                    <input type="number" id="ccPct" aria-labelledby="ccLabel" value="3" min="0" max="15" step="0.25">
                     <span class="step-sym">%</span>
                   </div>
                   <button class="step-btn step-r" type="button" onclick="stepCCPct(0.25)" aria-label="Increase">+</button>
@@ -1271,7 +1292,7 @@ tbody tr:last-child td { border-bottom: 0; }
               <div class="field-label"><label for="insurance">Homeowners insurance</label></div>
               <div class="input-shell">
                 <span class="adorn">$</span>
-                <input type="text" id="insurance" value="1,575" inputmode="decimal" data-fmt="dollar">
+                <input type="text" id="insurance" value="1,575" inputmode="numeric" data-fmt="dollar">
                 <span class="adorn adorn-r">/ yr</span>
               </div>
               <p class="field-help">Auto-estimated as ~0.35% of home value. Type to override.</p>
@@ -1280,21 +1301,21 @@ tbody tr:last-child td { border-bottom: 0; }
 
           <div class="field">
             <div class="field-label">
-              <label>PMI</label>
-              <div class="segmented" role="tablist">
-                <button class="pill" id="btnPMIDollar" type="button" role="tab" aria-selected="false" onclick="setPMIMode('dollar')">$ / mo</button>
-                <button class="pill on" id="btnPMIPct" type="button" role="tab" aria-selected="true" onclick="setPMIMode('pct')">% / yr</button>
+              <span class="flabel" id="pmiLabel">PMI</span>
+              <div class="segmented" role="group">
+                <button class="pill" id="btnPMIDollar" type="button" aria-pressed="false" onclick="setPMIMode('dollar')">$ / mo</button>
+                <button class="pill on" id="btnPMIPct" type="button" aria-pressed="true" onclick="setPMIMode('pct')">% / yr</button>
               </div>
             </div>
             <div id="pmiDollarWrap" style="display:none">
               <div class="input-shell">
                 <span class="adorn">$</span>
-                <input type="text" id="pmiDollar" inputmode="decimal" data-fmt="dollar">
+                <input type="text" id="pmiDollar" aria-labelledby="pmiLabel" inputmode="numeric" data-fmt="dollar">
               </div>
             </div>
             <div id="pmiPctWrap">
               <div class="input-shell">
-                <input type="number" id="pmiRate" value="0.85" min="0" max="3" step="0.05">
+                <input type="number" id="pmiRate" aria-labelledby="pmiLabel" value="0.85" min="0" max="3" step="0.05">
                 <span class="adorn adorn-r">% / yr</span>
               </div>
             </div>
@@ -1307,7 +1328,7 @@ tbody tr:last-child td { border-bottom: 0; }
               <div class="field-label"><label for="hoa">HOA fee</label></div>
               <div class="input-shell">
                 <span class="adorn">$</span>
-                <input type="text" id="hoa" value="0" inputmode="decimal" data-fmt="dollar">
+                <input type="text" id="hoa" value="0" inputmode="numeric" data-fmt="dollar">
                 <span class="adorn adorn-r">/ mo</span>
               </div>
               <p class="field-help">Zero if none.</p>
@@ -1319,7 +1340,7 @@ tbody tr:last-child td { border-bottom: 0; }
               </div>
               <div class="input-shell">
                 <span class="adorn">$</span>
-                <input type="text" id="otherDebts" value="0" inputmode="decimal" data-fmt="dollar">
+                <input type="text" id="otherDebts" value="0" inputmode="numeric" data-fmt="dollar">
                 <span class="adorn adorn-r">/ mo</span>
               </div>
               <p class="field-help">Car, cards, student loans. Used for the 36% back-end rule.</p>
@@ -1328,7 +1349,7 @@ tbody tr:last-child td { border-bottom: 0; }
               <div class="field-label"><label for="maintOverride">Maintenance reserve</label></div>
               <div class="input-shell">
                 <span class="adorn">$</span>
-                <input type="text" id="maintOverride" inputmode="decimal">
+                <input type="text" id="maintOverride" inputmode="numeric">
                 <span class="adorn adorn-r">/ mo</span>
               </div>
               <p class="field-help">Defaults to 1% of home value per year. Edit to override.</p>
@@ -1356,13 +1377,13 @@ tbody tr:last-child td { border-bottom: 0; }
             <div class="field">
               <div class="field-label"><label for="sqft">Square footage</label></div>
               <div class="input-shell">
-                <input type="text" id="sqft" value="2,000" inputmode="decimal" data-fmt="number">
+                <input type="text" id="sqft" value="2,000" inputmode="numeric" data-fmt="number">
                 <span class="adorn adorn-r">sq ft</span>
               </div>
               <p class="field-help">Living area on the listing.</p>
             </div>
             <div class="field">
-              <div class="field-label"><label>Estimated total</label></div>
+              <div class="field-label"><span class="flabel">Estimated total</span></div>
               <div class="auto-readout">
                 <span id="utilDisplay">$—</span>
                 <span class="auto-readout-suffix">per month</span>
@@ -1453,7 +1474,7 @@ tbody tr:last-child td { border-bottom: 0; }
             </div>
             <div class="input-shell" style="max-width: 280px;">
               <span class="adorn">$</span>
-              <input type="text" id="utilOverride" placeholder="Auto" inputmode="decimal" data-fmt="dollar">
+              <input type="text" id="utilOverride" placeholder="Auto" inputmode="numeric" data-fmt="dollar">
               <span class="adorn adorn-r">/ mo</span>
             </div>
             <p class="field-help">Got real bills? Drop the total here.</p>
@@ -1475,7 +1496,8 @@ tbody tr:last-child td { border-bottom: 0; }
         <span class="results-tag">live · all-in</span>
       </div>
 
-      <div class="total-hero" aria-live="polite">
+      <div class="total-hero">
+        <span class="sr-only" aria-live="polite" id="srTotal"></span>
         <div class="total-eyebrow">Estimated monthly total</div>
         <div class="total-amount">
           <span id="totalAmt">$—</span>
@@ -1518,7 +1540,7 @@ tbody tr:last-child td { border-bottom: 0; }
         </div>
       </div>
 
-      <button class="amort-toggle" id="amortBtn" type="button" onclick="toggleAmort()">
+      <button class="amort-toggle" id="amortBtn" type="button" aria-expanded="false" aria-controls="amortPanel" onclick="toggleAmort()">
         <span>Yearly payoff schedule</span>
         <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
@@ -1556,19 +1578,25 @@ tbody tr:last-child td { border-bottom: 0; }
   const sunIcon = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
   const moonIcon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
 
-  function applyTheme(t) {
+  function applyTheme(t, persist) {
     root.setAttribute('data-theme', t);
     label.textContent = t === 'dark' ? 'Dark' : 'Light';
     icon.innerHTML = t === 'dark' ? moonIcon : sunIcon;
-    try { localStorage.setItem('mortgageCalc_theme', t); } catch(e) {}
+    if (persist) { try { localStorage.setItem('mortgageCalc_theme', t); } catch(e) {} }
   }
 
-  let saved = null;
-  try { saved = localStorage.getItem('mortgageCalc_theme'); } catch(e) {}
-  applyTheme(saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  // Theme was already applied in <head> before first paint — just sync the UI
+  applyTheme(root.getAttribute('data-theme') || 'light', false);
 
   btn.addEventListener('click', () => {
-    applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
+  });
+
+  // Follow OS theme changes only if the user hasn't picked one manually
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    let saved = null;
+    try { saved = localStorage.getItem('mortgageCalc_theme'); } catch(err) {}
+    if (!saved) applyTheme(e.matches ? 'dark' : 'light', false);
   });
 })();
 </script>
@@ -1654,25 +1682,25 @@ tbody tr:last-child td { border-bottom: 0; }
 
         if (dpMode === 'pct') {
             document.getElementById('btnPct').classList.add('on');
-            document.getElementById('btnPct').setAttribute('aria-selected', 'true');
+            document.getElementById('btnPct').setAttribute('aria-pressed', 'true');
             document.getElementById('btnDollar').classList.remove('on');
-            document.getElementById('btnDollar').setAttribute('aria-selected', 'false');
+            document.getElementById('btnDollar').setAttribute('aria-pressed', 'false');
             document.getElementById('dpDollarWrap').style.display = 'none';
             document.getElementById('dpPctWrap').style.display = '';
         }
         if (ccMode === 'dollar') {
             document.getElementById('btnCCDollar').classList.add('on');
-            document.getElementById('btnCCDollar').setAttribute('aria-selected', 'true');
+            document.getElementById('btnCCDollar').setAttribute('aria-pressed', 'true');
             document.getElementById('btnCCPct').classList.remove('on');
-            document.getElementById('btnCCPct').setAttribute('aria-selected', 'false');
+            document.getElementById('btnCCPct').setAttribute('aria-pressed', 'false');
             document.getElementById('ccDollarWrap').style.display = '';
             document.getElementById('ccPctWrap').style.display = 'none';
         }
         if (pmiMode === 'dollar') {
             document.getElementById('btnPMIDollar').classList.add('on');
-            document.getElementById('btnPMIDollar').setAttribute('aria-selected', 'true');
+            document.getElementById('btnPMIDollar').setAttribute('aria-pressed', 'true');
             document.getElementById('btnPMIPct').classList.remove('on');
-            document.getElementById('btnPMIPct').setAttribute('aria-selected', 'false');
+            document.getElementById('btnPMIPct').setAttribute('aria-pressed', 'false');
             document.getElementById('pmiDollarWrap').style.display = '';
             document.getElementById('pmiPctWrap').style.display = 'none';
         }
@@ -1697,7 +1725,7 @@ tbody tr:last-child td { border-bottom: 0; }
     function show(id) { document.getElementById(id).style.display = ''; }
     function hide(id) { document.getElementById(id).style.display = 'none'; }
     function fmt(n)   { return '$' + addCommas(n); }
-    function fmtR(n)  { return '$' + addCommas(n); }
+    const fmtR = fmt; // kept as alias — call sites unchanged
 
     function liveFormat(el) {
         const cur = el.selectionStart;
@@ -1721,6 +1749,7 @@ tbody tr:last-child td { border-bottom: 0; }
     document.querySelectorAll('[data-fmt]').forEach(el => {
         el.addEventListener('input', () => {
             if (el.id === 'insurance') insManual = true;
+            if (el.id === 'homePrice') { insManual = false; maintManual = false; }
             liveFormat(el);
             calculate();
         });
@@ -1732,17 +1761,17 @@ tbody tr:last-child td { border-bottom: 0; }
         const price = val('homePrice');
         if (mode === 'dollar') {
             document.getElementById('btnDollar').classList.add('on');
-            document.getElementById('btnDollar').setAttribute('aria-selected', 'true');
+            document.getElementById('btnDollar').setAttribute('aria-pressed', 'true');
             document.getElementById('btnPct').classList.remove('on');
-            document.getElementById('btnPct').setAttribute('aria-selected', 'false');
+            document.getElementById('btnPct').setAttribute('aria-pressed', 'false');
             show('dpDollarWrap'); hide('dpPctWrap');
             const pct = val('dpPct');
             document.getElementById('dpDollar').value = addCommas(Math.round(price * pct / 100));
         } else {
             document.getElementById('btnPct').classList.add('on');
-            document.getElementById('btnPct').setAttribute('aria-selected', 'true');
+            document.getElementById('btnPct').setAttribute('aria-pressed', 'true');
             document.getElementById('btnDollar').classList.remove('on');
-            document.getElementById('btnDollar').setAttribute('aria-selected', 'false');
+            document.getElementById('btnDollar').setAttribute('aria-pressed', 'false');
             hide('dpDollarWrap'); show('dpPctWrap');
             const dp = parseFloat(stripCommas(document.getElementById('dpDollar').value)) || 0;
             document.getElementById('dpPct').value = price > 0 ? ((dp / price) * 100).toFixed(1) : '20';
@@ -1776,16 +1805,16 @@ tbody tr:last-child td { border-bottom: 0; }
         const price = val('homePrice');
         if (mode === 'dollar') {
             document.getElementById('btnCCDollar').classList.add('on');
-            document.getElementById('btnCCDollar').setAttribute('aria-selected', 'true');
+            document.getElementById('btnCCDollar').setAttribute('aria-pressed', 'true');
             document.getElementById('btnCCPct').classList.remove('on');
-            document.getElementById('btnCCPct').setAttribute('aria-selected', 'false');
+            document.getElementById('btnCCPct').setAttribute('aria-pressed', 'false');
             show('ccDollarWrap'); hide('ccPctWrap');
             document.getElementById('ccClosingDollar').value = addCommas(Math.round(price * val('ccPct') / 100));
         } else {
             document.getElementById('btnCCPct').classList.add('on');
-            document.getElementById('btnCCPct').setAttribute('aria-selected', 'true');
+            document.getElementById('btnCCPct').setAttribute('aria-pressed', 'true');
             document.getElementById('btnCCDollar').classList.remove('on');
-            document.getElementById('btnCCDollar').setAttribute('aria-selected', 'false');
+            document.getElementById('btnCCDollar').setAttribute('aria-pressed', 'false');
             show('ccPctWrap'); hide('ccDollarWrap');
             const cc = parseFloat(stripCommas(document.getElementById('ccClosingDollar').value)) || 0;
             document.getElementById('ccPct').value = price > 0 ? ((cc / price) * 100).toFixed(2) : '3';
@@ -1809,17 +1838,17 @@ tbody tr:last-child td { border-bottom: 0; }
         const loan  = Math.max(0, price - dp);
         if (mode === 'dollar') {
             document.getElementById('btnPMIDollar').classList.add('on');
-            document.getElementById('btnPMIDollar').setAttribute('aria-selected', 'true');
+            document.getElementById('btnPMIDollar').setAttribute('aria-pressed', 'true');
             document.getElementById('btnPMIPct').classList.remove('on');
-            document.getElementById('btnPMIPct').setAttribute('aria-selected', 'false');
+            document.getElementById('btnPMIPct').setAttribute('aria-pressed', 'false');
             show('pmiDollarWrap'); hide('pmiPctWrap');
             const monthly = loan > 0 ? Math.round((loan * val('pmiRate') / 100) / 12) : 0;
             document.getElementById('pmiDollar').value = addCommas(monthly);
         } else {
             document.getElementById('btnPMIPct').classList.add('on');
-            document.getElementById('btnPMIPct').setAttribute('aria-selected', 'true');
+            document.getElementById('btnPMIPct').setAttribute('aria-pressed', 'true');
             document.getElementById('btnPMIDollar').classList.remove('on');
-            document.getElementById('btnPMIDollar').setAttribute('aria-selected', 'false');
+            document.getElementById('btnPMIDollar').setAttribute('aria-pressed', 'false');
             show('pmiPctWrap'); hide('pmiDollarWrap');
             const monthly = val('pmiDollar');
             document.getElementById('pmiRate').value = loan > 0
@@ -2008,28 +2037,58 @@ tbody tr:last-child td { border-bottom: 0; }
         const monthlyTax = (price * taxRate / 100) / 12;
         const monthlyIns = annualIns / 12;
 
-        const dpPct     = price > 0 ? (dp / price) * 100 : 0;
-        const pmiApplies = dpPct < 20 && loanType !== 'va';
+        const dpPct = price > 0 ? (dp / price) * 100 : 0;
+
+        // Mortgage insurance rules by loan type:
+        //   conventional — PMI if <20% down; auto-cancels at 78% of original value
+        //   FHA          — MIP always applies: life of loan under 10% down, 11 yrs at 10%+
+        //   USDA         — annual guarantee fee for the life of the loan
+        //   VA           — none
+        let miLabel = 'PMI';
+        let pmiApplies = false;
+        let fhaMonthsCap = null;
+        if (price > 0 && loan > 0) {
+            if (loanType === 'fha') {
+                pmiApplies = true;
+                miLabel = 'MIP (FHA)';
+                fhaMonthsCap = dpPct >= 10 ? Math.min(132, n) : n;
+            } else if (loanType === 'usda') {
+                pmiApplies = true;
+                miLabel = 'Guarantee fee (USDA)';
+            } else if (loanType === 'conventional') {
+                pmiApplies = dpPct < 20;
+            }
+        }
+
         let monthlyPMI = 0;
         let pmiDropMonth = null;
 
         if (pmiApplies) {
             monthlyPMI = getMonthlyPMI(loan);
-            const targetBal = price * 0.78;
-            let bal = loan;
-            if (loan > targetBal) {
-                for (let i = 1; i <= n; i++) {
-                    const interest = bal * r;
-                    bal = Math.max(0, bal - (monthlyPI - interest));
-                    if (bal <= targetBal) { pmiDropMonth = i; break; }
+            const alertEl = document.getElementById('pmiAlert');
+            alertEl.classList.add('show');
+            if (loanType === 'conventional') {
+                const targetBal = price * 0.78;
+                let bal = loan;
+                if (loan > targetBal) {
+                    for (let i = 1; i <= n; i++) {
+                        const interest = bal * r;
+                        bal = Math.max(0, bal - (monthlyPI - interest));
+                        if (bal <= targetBal) { pmiDropMonth = i; break; }
+                    }
                 }
+                const dropStr = pmiDropMonth
+                    ? ` Cancels around month ${pmiDropMonth} (year ${Math.ceil(pmiDropMonth/12)}).`
+                    : ' May not cancel within this loan term.';
+                alertEl.innerHTML = `PMI applies — you're at ${dpPct.toFixed(1)}% down. Auto-cancels at 78% LTV.${dropStr}`;
+            } else if (loanType === 'fha') {
+                pmiDropMonth = fhaMonthsCap < n ? fhaMonthsCap : null;
+                alertEl.innerHTML = dpPct >= 10
+                    ? `FHA MIP applies for 11 years at 10%+ down. A 1.75% upfront MIP is also due at closing (not included here).`
+                    : `FHA MIP applies for the <strong>life of the loan</strong> at under 10% down. A 1.75% upfront MIP is also due at closing (not included here). Refinancing to conventional is the usual exit once you hit 20% equity.`;
+            } else if (loanType === 'usda') {
+                alertEl.innerHTML = `USDA annual fee applies for the life of the loan. A 1% upfront guarantee fee is also financed at closing (not included here).`;
             }
-            const el = document.getElementById('pmiAlert');
-            el.classList.add('show');
-            const dropStr = pmiDropMonth
-                ? ` Cancels around month ${pmiDropMonth} (year ${Math.ceil(pmiDropMonth/12)}).`
-                : ' May not cancel within this loan term.';
-            el.innerHTML = `PMI applies — you're at ${dpPct.toFixed(1)}% down. Auto-cancels at 78% LTV.${dropStr}`;
         } else {
             document.getElementById('pmiAlert').classList.remove('show');
         }
@@ -2038,7 +2097,13 @@ tbody tr:last-child td { border-bottom: 0; }
             const impliedRate = (val('pmiDollar') * 12) / loan * 100;
             document.getElementById('pmiHint').textContent = `Flat monthly premium — implied rate: ${impliedRate.toFixed(2)}% / yr of loan.`;
         } else {
-            document.getElementById('pmiHint').textContent = 'Typical 0.5%–1.5% of the loan. Drops off automatically once you reach 20% equity.';
+            const miHints = {
+                conventional: 'Typical 0.5%–1.5% of the loan. Drops off automatically once you reach 20% equity.',
+                fha:  'FHA annual MIP is typically 0.55% of the loan (0.50% at 10%+ down for most loans).',
+                usda: 'USDA annual fee is 0.35% of the loan balance.',
+                va:   'VA loans have no monthly mortgage insurance — a one-time funding fee applies at closing.',
+            };
+            document.getElementById('pmiHint').textContent = miHints[loanType] || miHints.conventional;
         }
 
         const hint = document.getElementById('dpHint');
@@ -2048,8 +2113,9 @@ tbody tr:last-child td { border-bottom: 0; }
             hint.innerHTML = dpMode === 'dollar'
                 ? `${dpPct.toFixed(1)}% of home price`
                 : `${fmtR(dp)} down payment`;
-            if (dpPct >= 20)           hint.innerHTML += ' &mdash; <strong>No PMI required ✓</strong>';
-            else if (loanType === 'va') hint.innerHTML += ' &mdash; <strong>VA loan: no PMI ✓</strong>';
+            if (loanType === 'va')      hint.innerHTML += ' &mdash; <strong>VA loan: no PMI ✓</strong>';
+            else if (dpPct >= 20 && loanType === 'conventional')
+                                        hint.innerHTML += ' &mdash; <strong>No PMI required ✓</strong>';
         }
 
         const ccPctOfPrice = price > 0 ? (closing / price * 100) : 0;
@@ -2063,13 +2129,19 @@ tbody tr:last-child td { border-bottom: 0; }
         const parsedUtil   = parseFloat(utilRaw);
         const monthlyUtil  = utilRaw && isFinite(parsedUtil) ? parsedUtil : utilEst;
 
-        const e = Math.round(monthlyUtil * 0.45);
-        const g = Math.round(monthlyUtil * 0.25);
-        const w = Math.round(monthlyUtil * 0.20);
-        const t = Math.round(monthlyUtil * 0.10);
         const bd = document.getElementById('utilBreakdown');
-        bd.innerHTML = `<span style="font-family:'Geist Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-right:0.5rem;">Split</span>Electric <span class="num">${fmt(e)}</span> · Gas <span class="num">${fmt(g)}</span> · Water <span class="num">${fmt(w)}</span> · Trash <span class="num">${fmt(t)}</span>`;
-        bd.classList.add('show');
+        const utilOverridden = utilRaw !== '' && isFinite(parsedUtil);
+        if (utilOverridden) {
+            // The modeled split doesn't describe the user's real bills
+            bd.classList.remove('show');
+        } else {
+            const e = Math.round(monthlyUtil * 0.45);
+            const g = Math.round(monthlyUtil * 0.25);
+            const w = Math.round(monthlyUtil * 0.20);
+            const t = Math.round(monthlyUtil * 0.10);
+            bd.innerHTML = `<span style="font-family:'Geist Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-right:0.5rem;">Split</span>Electric <span class="num">${fmt(e)}</span> · Gas <span class="num">${fmt(g)}</span> · Water <span class="num">${fmt(w)}</span> · Trash <span class="num">${fmt(t)}</span>`;
+            bd.classList.add('show');
+        }
 
         const total = monthlyPI + monthlyTax + monthlyIns + monthlyPMI + hoa + maintenance + monthlyUtil;
 
@@ -2077,7 +2149,7 @@ tbody tr:last-child td { border-bottom: 0; }
             { label: 'Principal & Interest', value: monthlyPI,   color: C.pi },
             { label: 'Property Tax',          value: monthlyTax,  color: C.tax },
             { label: 'Homeowners Insurance',  value: monthlyIns,  color: C.insurance },
-            pmiApplies          && { label: 'PMI',               value: monthlyPMI,  color: C.pmi },
+            (pmiApplies && monthlyPMI > 0) && { label: miLabel,   value: monthlyPMI,  color: C.pmi },
             hoa > 0             && { label: 'HOA Fee',           value: hoa,         color: C.hoa },
             maintenance > 0     && { label: 'Maintenance',       value: maintenance, color: C.maintenance },
             monthlyUtil > 0     && { label: 'Utilities (est.)',  value: monthlyUtil, color: C.utilities },
@@ -2089,6 +2161,7 @@ tbody tr:last-child td { border-bottom: 0; }
         const fmtPerYear = v => fmtR(v) + ' / year';
 
         tweenNum(document.getElementById('totalAmt'),   total, fmt);
+        document.getElementById('srTotal').textContent = `Estimated monthly total ${fmt(total)} per month`;
         document.getElementById('totalSub').textContent = itemDefs.map(i => i.label).join(' + ');
         tweenNum(document.getElementById('totalPerYr'), total * 12, fmtPerYear);
 
@@ -2161,6 +2234,7 @@ tbody tr:last-child td { border-bottom: 0; }
         const btn   = document.getElementById('amortBtn');
         const open  = panel.classList.toggle('open');
         btn.classList.toggle('on', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
         if (open) {
             const price   = val('homePrice');
             const dp      = getDP();
@@ -2176,10 +2250,6 @@ tbody tr:last-child td { border-bottom: 0; }
         maintManual = true;
         liveFormat(document.getElementById('maintOverride'));
         calculate();
-    });
-
-    document.getElementById('homePrice').addEventListener('input', () => {
-        insManual = false; maintManual = false; calculate();
     });
 
     ['dpPct','ccPct','rate','term','loanType',
