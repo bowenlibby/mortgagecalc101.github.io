@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mortgage Calculator</title>
 <meta name="description" content="All-in monthly mortgage calculator — principal, interest, taxes, insurance, PMI, utilities, and maintenance, plus cash to close and income needed.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23b65a32'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' fill='%23fff' text-anchor='middle'%3E$%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%232c5f8a'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' fill='%23fff' text-anchor='middle'%3E$%3C/text%3E%3C/svg%3E">
 
 <script>
 // Apply saved/OS theme before first paint to avoid a light-mode flash
@@ -26,50 +26,50 @@
    TOKENS
    ───────────────────────────────────────────────────────────── */
 :root[data-theme="light"] {
-  --bg:           #f4efe6;
-  --bg-grain:     #ede7da;
+  --bg:           #f5f5f4;
+  --bg-grain:     #ececeb;
   --surface:      #ffffff;
-  --surface-2:    #faf6ef;
-  --surface-sink: #f0ebe0;
+  --surface-2:    #fafafa;
+  --surface-sink: #efefee;
   --input-bg:     #ffffff;
-  --line:         #e2dccd;
-  --line-2:       #d3cbb8;
-  --rule:         #1c19161a;
-  --text:         #1c1916;
-  --text-2:       #4a443d;
-  --muted:        #847b6c;
-  --accent:       #b65a32;        /* terracotta */
-  --accent-ink:   #8a3f1f;
-  --accent-soft:  #f1e2d4;
+  --line:         #e3e3e1;
+  --line-2:       #cfcfcc;
+  --rule:         #1717171a;
+  --text:         #171717;
+  --text-2:       #464646;
+  --muted:        #7a7a7a;
+  --accent:       #2c5f8a;        /* estate navy */
+  --accent-ink:   #1d4666;
+  --accent-soft:  #dde8f2;
   --pos:          #2f6b47;
   --neg:          #9c3528;
-  --warn:         #8c5e1c;
-  --warn-soft:    #f4e8cf;
-  --info-soft:    #e7e0d2;
-  --shadow-card:  0 1px 0 #1c19160a, 0 1px 2px #1c19160a;
-  --shadow-lift:  0 1px 0 #1c19160a, 0 8px 24px -10px #1c19161a;
+  --warn:         #8c6a1c;
+  --warn-soft:    #f2ecd9;
+  --info-soft:    #e9e9e9;
+  --shadow-card:  0 1px 0 #1717170a, 0 1px 2px #1717170a;
+  --shadow-lift:  0 1px 0 #1717170a, 0 8px 24px -10px #1717171a;
 }
 :root[data-theme="dark"] {
-  --bg:           #14110d;
-  --bg-grain:     #18140f;
-  --surface:      #1d1813;
-  --surface-2:    #221d17;
-  --surface-sink: #16120e;
-  --input-bg:     #16120e;
-  --line:         #2d2620;
-  --line-2:       #3b332b;
-  --rule:         #f3ede21f;
-  --text:         #f3ede2;
-  --text-2:       #c4bcae;
-  --muted:        #8a8174;
-  --accent:       #e07a4c;
-  --accent-ink:   #f0a07a;
-  --accent-soft:  #3a2418;
+  --bg:           #111111;
+  --bg-grain:     #141414;
+  --surface:      #1a1a1a;
+  --surface-2:    #1f1f1f;
+  --surface-sink: #141414;
+  --input-bg:     #141414;
+  --line:         #2a2a2a;
+  --line-2:       #383838;
+  --rule:         #f5f5f51f;
+  --text:         #f5f5f5;
+  --text-2:       #bdbdbd;
+  --muted:        #8a8a8a;
+  --accent:       #6fa8d4;
+  --accent-ink:   #9cc6e6;
+  --accent-soft:  #1c3450;
   --pos:          #6dbf8e;
   --neg:          #e07058;
-  --warn:         #d8a058;
-  --warn-soft:    #2e2516;
-  --info-soft:    #221d17;
+  --warn:         #d8b058;
+  --warn-soft:    #262218;
+  --info-soft:    #1f1f1f;
   --shadow-card:  0 1px 0 #00000040, 0 1px 2px #00000060;
   --shadow-lift:  0 1px 0 #00000040, 0 12px 28px -10px #00000080;
 }
@@ -100,7 +100,7 @@ body {
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 input, select { font: inherit; color: inherit; }
 
-::selection { background: var(--accent); color: #fff; }
+::selection { background: var(--text); color: var(--bg); }
 
 /* Numeric typography */
 .num { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -519,7 +519,7 @@ main {
 
 /* Native select arrow */
 select {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%23847b6c' stroke-width='1.5' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%237a7a7a' stroke-width='1.5' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.875rem center;
   padding-right: 2.25rem !important;
@@ -1605,12 +1605,12 @@ tbody tr:last-child td { border-bottom: 0; }
 <script>
     // ── Color palette for breakdown ──────────────────────────────────────────
     const C = {
-        pi:          '#b65a32',   // accent terracotta
-        tax:         '#8c5e1c',   // warm gold
+        pi:          '#2c5f8a',   // navy
+        tax:         '#8c6a1c',   // gold
         insurance:   '#2f6b47',   // green
-        pmi:         '#9c3528',   // red
+        pmi:         '#9c3528',   // brick
         hoa:         '#6e5396',   // violet
-        maintenance: '#7d756b',   // muted
+        maintenance: '#7d756b',   // stone
         utilities:   '#3e7d80',   // teal
     };
 
